@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "stafyapp",
     "name": "stafy-mobile",
     "slug": "stafy-mobile",
     "version": "1.0.0",
@@ -25,6 +26,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-router"
+    ]
   }
 }
