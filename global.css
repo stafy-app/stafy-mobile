@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@tailwind utilities;
+
+@layer theme {
+
+    :root {
+        @variant light{
+
+            /* Paleta Primary (Brand) */
+            --color-primary-100: #feecd9;
+            --color-primary-200: #fddab0;
+            --color-primary-300: #fcbf80;
+            --color-primary-400: #fa9e4d;
+            --color-primary-500: #F77518; /* Brand Color */
+            --color-primary-600: #cc5d10;
+            --color-primary-700: #99430a;
+            --color-primary-800: #662c05;
+            --color-primary-900: #331502;
+
+            /* Paleta Secondary (Fundaluri și Texte) */
+            --color-secondary-50: #f8fafc;  /* General background */
+            --color-secondary-100: #f1f5f9; /* Inputs/cards background */
+            --color-secondary-200: #e2e8f0; /* borders */
+            --color-secondary-300: #cbd5e1; /* inactive icons */
+            --color-secondary-400: #94a3b8;
+            --color-secondary-500: #64748b; /* secondary text */
+            --color-secondary-600: #475569;
+            --color-secondary-700: #334155;
+            --color-secondary-800: #1E293B;
+            --color-secondary-900: #0f172a; /* primary text */
+        }
+
+        @variant dark{
+            --color-primary-100: #feecd9;
+            --color-primary-200: #fddab0;
+            --color-primary-300: #fcbf80;
+            --color-primary-400: #fa9e4d;
+            --color-primary-500: #F77518; /* Brand Color */
+            --color-primary-600: #cc5d10;
+            --color-primary-700: #99430a;
+            --color-primary-800: #662c05;
+            --color-primary-900: #331502;
+
+            --color-secondary-50: #0f172a;  /* General background */
+            --color-secondary-100: #1E293B; /* Inputs/cards background */
+            --color-secondary-200: #334155; /* borders */
+            --color-secondary-300: #475569; /* inactive icons */
+            --color-secondary-400: #64748b;
+            --color-secondary-500: #94a3b8; /* secondary text */
+            --color-secondary-600: #cbd5e1;
+            --color-secondary-700: #e2e8f0;
+            --color-secondary-800: #f1f5f9;
+            --color-secondary-900: #f8fafc; /* primary text */
+        }
+
+    }
+}
