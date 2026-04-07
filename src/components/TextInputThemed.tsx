@@ -1,8 +1,8 @@
 // src/components/TextInputThemed.tsx
 
-import { View, TextInput, Text, KeyboardTypeOptions } from 'react-native';
-import { Mail } from 'lucide-react-native';
-import { useState } from 'react';
+import {View, TextInput, Text, KeyboardTypeOptions} from 'react-native';
+import {Mail} from 'lucide-react-native';
+import {useState} from 'react';
 
 type TextInputThemedProps = {
     Icon?: any;
@@ -12,6 +12,8 @@ type TextInputThemedProps = {
     keyboardType?: KeyboardTypeOptions;
     className?: string;
     isPassword?: boolean;
+    value?: string;
+    onChangeText?: (text: string) => void;
 };
 
 export default function TextInputThemed({
@@ -22,6 +24,8 @@ export default function TextInputThemed({
                                             keyboardType = 'default',
                                             className = '',
                                             isPassword = false,
+                                            value = '',
+                                            onChangeText = () => null,
                                         }: TextInputThemedProps) {
     const [isFocused, setIsFocused] = useState(false);
 
@@ -34,7 +38,7 @@ export default function TextInputThemed({
                     isFocused ? 'border-primary-500' : 'border-secondary-200'
                 }`}
             >
-                <Icon size={IconSize} className="text-secondary-500" />
+                <Icon size={IconSize} className="text-secondary-500"/>
                 <TextInput
                     className="flex-1 ml-3 py-3 text-base text-secondary-900 outline-none"
                     placeholder={placeholder}
@@ -45,6 +49,8 @@ export default function TextInputThemed({
                     autoCapitalize="none"
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
+                    value={value}
+                    onChangeText={onChangeText}
                 />
             </View>
         </View>

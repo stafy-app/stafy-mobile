@@ -8,6 +8,7 @@ type ButtonThemedProps = {
     variant?: "primary" | "";
     isLoading?: boolean;
     className?: string;
+    onPress?: () => void;
 }
 
 export default function ButtonThemed({
@@ -15,6 +16,7 @@ export default function ButtonThemed({
                                          variant = "primary",
                                          isLoading = false,
                                          className = "",
+                                         onPress = () =>null,
                                      }: ButtonThemedProps) {
 
     const isPrimary = variant === "primary";
@@ -26,12 +28,14 @@ export default function ButtonThemed({
         <TouchableOpacity disabled={isLoading} activeOpacity={0.7}
                           className={`w-full h-14 rounded-xl items-center justify-center flex-row ${bgClass}
                            shadow-sm shadow-primary-500/30
-                            ${isLoading ? "opacity-50" : ""} ${className}`}>
+                            ${isLoading ? "opacity-50" : ""} ${className}`}
+                          onPress={onPress}>
 
             {isLoading ?
                 <ActivityIndicator color={isPrimary ? "white" : "black"}/>
                 : <Text className={`font-semibold text-lg ${textClass}`}>{title}</Text>
             }
+
 
         </TouchableOpacity>
 
