@@ -11,11 +11,10 @@ export default function AuthLayout() {
 
     return (
         <UserProvider>
-            <SafeAreaView className="flex-1">
+            <SafeAreaView className="flex-1 bg-secondary-50">
 
-                <View className="flex-1 px-6 bg-secondary-50">
                     <Stack screenOptions={{headerShown: false}}/>
-                </View>
+
             </SafeAreaView>
         </UserProvider>
     );

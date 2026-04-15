@@ -41,7 +41,7 @@ export default function LoginScreen() {
 
     return (
 
-    <View className={"flex-1 w-full bg-secondary-50 items-center justify-center"}>
+    <View className={"flex-1 px-6 w-full bg-secondary-50 items-center justify-center"}>
 
         <StafyLogoBlock width={102} height={102}/>
 
