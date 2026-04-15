@@ -22,7 +22,7 @@ export default function RegisterScreen() {
     const [role, setRole] = useState("")
     const [password, setPassword] = useState("");
 
-
+    const [registerOk, setRegisterOk] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
 
@@ -31,19 +31,30 @@ export default function RegisterScreen() {
         { label: 'Manager', value: 'manager' },
     ];
 
-    const {login} = useUser();
+    const {register} = useUser();
 
     const handleLogin = async () => {
         //console.log("Login");
         // console.log(email);
 
         try {
-            setIsLoading(true);
-            setTimeout(() => {
-                setIsLoading(false);
-            }, 2000);
 
-            await login(email, password);
+            setIsLoading(true);
+
+            // create data
+            const registerData = {
+                name: name,
+                surname: surname,
+                email: email,
+                phone: phone,
+                role: role,
+                password: password,
+            }
+
+            // call the register function
+            if (await register(registerData)) {
+                setRegisterOk(true);
+            }
 
         } catch (e) {
             console.log(e);
