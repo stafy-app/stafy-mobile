@@ -1,6 +1,6 @@
 // app/register.tsx
 
-import {View, Text, Image, TextInput, Alert, ScrollView} from "react-native";
+import {View, Text, Alert, ScrollView} from "react-native";
 import {Link, router} from "expo-router";
 
 import {Lock, UserRound, Phone, Briefcase} from "lucide-react-native";
