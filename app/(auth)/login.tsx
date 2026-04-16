@@ -1,7 +1,7 @@
 // app/login.tsx
 
 import {View, Text, Image, TextInput, Alert} from "react-native";
-import {Link} from "expo-router";
+import {Link, router} from "expo-router";
 
 import {Lock} from "lucide-react-native";
 
@@ -30,6 +30,7 @@ export default function LoginScreen() {
             }, 2000);
 
             await login(email, password);
+            router.replace("/attendance");
 
         }catch (e){
             console.log(e);
