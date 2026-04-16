@@ -1,6 +1,6 @@
 // src/components/PopupThemed.tsx
 
-import {View, Text, Modal, TouchableOpacity} from 'react-native';
+import {View, Text, Modal} from 'react-native';
 import ButtonThemed from "./ButtonThemed";
 
 interface CustomPopupProps {
