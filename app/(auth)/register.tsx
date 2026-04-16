@@ -1,7 +1,7 @@
 // app/register.tsx
 
 import {View, Text, Image, TextInput, Alert, ScrollView} from "react-native";
-import {Link} from "expo-router";
+import {Link, router} from "expo-router";
 
 import {Lock, UserRound, Phone, Briefcase} from "lucide-react-native";
 
@@ -9,6 +9,7 @@ import StafyLogoBlock from "../../src/components/StafyLogoBlock";
 import TextInputThemed from "../../src/components/TextInputThemed";
 import ButtonThemed from "../../src/components/ButtonThemed";
 import DropdownThemed from "../../src/components/DropdownThemed";
+import PopupThemed from "../../src/components/PopupThemed";
 
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
@@ -120,6 +121,14 @@ export default function RegisterScreen() {
                 <Text className={"text-base"}> Nu ai cont? </Text>
                 <Link href={"/login"} className={"text-primary-500 text-base"}>Autentifică-te acum</Link>
             </View>
+
+            <PopupThemed visible={registerOk} title={"Cont creat cu succes!"}
+            message={"Mergi la pagina de autentificare"}
+            buttonText={"Autentificare"} onClose={() => {
+                setRegisterOk(false);
+                router.replace("/login");
+            }}/>
+
         </ScrollView>
     )
 }
