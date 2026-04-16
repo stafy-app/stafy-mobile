@@ -1,6 +1,6 @@
 // app/login.tsx
 
-import {View, Text, Image, TextInput, Alert} from "react-native";
+import {View, Text, Alert} from "react-native";
 import {Link, router} from "expo-router";
 
 import {Lock} from "lucide-react-native";
