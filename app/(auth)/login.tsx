@@ -24,10 +24,6 @@ export default function LoginScreen() {
        // console.log(email);
 
         try{
-            setIsLoading(true);
-            setTimeout(() => {
-                setIsLoading(false);
-            }, 2000);
 
             await login(email, password);
             router.replace("/attendance");
