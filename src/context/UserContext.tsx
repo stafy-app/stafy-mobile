@@ -1,9 +1,10 @@
 // src/context/UserContext.tsx
 
-import React, {createContext, useState} from 'react';
+import React, {createContext, useEffect, useState} from 'react';
 import {api} from "../services/api";
-import {saveItem} from "@/src/services/storage";
-import {Redirect} from "expo-router";
+import {deleteItem, saveItem} from "@/src/services/storage";
+import {Redirect, router} from "expo-router";
+import {getItem} from "expo-secure-store";
 
 
 interface RegisterData {
@@ -17,9 +18,9 @@ interface RegisterData {
 
 interface User {
     id: string;
-    email: string;
-    password: string;
-    name: string;
+    email?: string;
+    password?: string;
+    name?: string;
 }
 
 interface UserContextType {
@@ -41,12 +42,15 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
         try {
 
+            setIsLoading(true);
+
             // create the form data
             const formData = new FormData();
             formData.append('username', email);
             formData.append('password', password);
 
-            console.log("Sending login request with data: ", formData);
+            console.log("Sending login request with data: " +
+                "\nEmail: " + formData.get('username'));
 
             // send data to backend
             const response = await api.post('/auth/login', formData, {
@@ -57,28 +61,40 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             console.log("Response from backend: ", response.data);
 
+            if (!response) {
+                console.error("No response received from the server");
+                throw new Error("No response received from the server");
+            }
+
             // get data from backend
-            const {id, access_token: token} = response.data;
+            const {id, access_token: token, token_type, role} = response.data;
+
+            const userData = {id, email, role}
+
+            // save user data in state
+            setUser(userData)
 
             // save user and token in local storage
-            await saveItem('@stafy_id', JSON.stringify(user));
+            await saveItem('@stafy_userData', JSON.stringify(userData));
             await saveItem('@stafy_token', token);
-
-            // set user in state
-            setUser(user);
 
 
             // redirect to home page
-            console.log("Redirecting to home page\nToken: ", token, "\nId: ", id);
+            console.log("Redirecting to home page\nToken: ", token, "\nId: ", id, "\nUser: ", userData);
+            router.replace("/attendance");
+
         } catch (error: any) {
             console.log(error.response.data.message)
             throw new Error(error.response.data.message);
+        } finally {
+            setIsLoading(false);
         }
     }
 
     async function register(registerData: RegisterData) {
 
-        try{
+        try {
+            setIsLoading(true);
 
             // send data to backend
             const response = await api.post('/auth/register', {
@@ -91,6 +107,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             });
 
             console.log("Response from backend: ", response.data);
+            setIsLoading(false);
 
             return true
         } catch (error: any) {
@@ -101,8 +118,27 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }
 
     async function logout() {
-
+        // remove user data from state
+        setUser(null);
+        await deleteItem('@stafy_id');
+        await deleteItem('@stafy_token');
     }
+
+    useEffect(() => {
+
+        // check if user is logged in
+        const authCheck = async () => {
+            try {
+                const storedUserData = await getItem('@stafy_id');
+                const storedToken = await getItem('@stafy_token');
+
+                // ToDO Finsih the useEffect
+            } catch (error) {
+                console.error("Error checking authentication:", error);
+            }
+        }
+
+    }, [])
 
     return (
         <UserContext.Provider value={{user, isLoading, login, register, logout}}>
