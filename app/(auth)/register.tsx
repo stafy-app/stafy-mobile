@@ -27,14 +27,16 @@ export default function RegisterScreen() {
     const [isLoading, setIsLoading] = useState(false);
 
 
+    const {register} = useUser();
+
     const roleOptions = [
         { label: 'Angajat', value: 'employee' },
         { label: 'Manager', value: 'manager' },
     ];
 
-    const {register} = useUser();
 
-    const handleLogin = async () => {
+
+    const handleRegister = async () => {
         //console.log("Login");
         // console.log(email);
 
@@ -115,7 +117,7 @@ export default function RegisterScreen() {
                              value={password}
                              onChangeText={setPassword}/>
 
-            <ButtonThemed onPress={handleLogin} isLoading={isLoading} title={"Crează contul"} className={"mt-10"}/>
+            <ButtonThemed onPress={handleRegister} isLoading={isLoading} title={"Crează contul"} className={"mt-10"}/>
 
             <View className={"flex-row items-center justify-center mt-10"}>
                 <Text className={"text-base"}> Nu ai cont? </Text>
