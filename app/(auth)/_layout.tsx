@@ -10,12 +10,11 @@ export default function AuthLayout() {
     Uniwind.setTheme('light');
 
     return (
-        <UserProvider>
-            <SafeAreaView className="flex-1 bg-secondary-50">
+        <SafeAreaView className="flex-1 bg-secondary-50">
 
-                    <Stack screenOptions={{headerShown: false}}/>
+            <Stack screenOptions={{headerShown: false}}/>
 
-            </SafeAreaView>
-        </UserProvider>
+        </SafeAreaView>
+
     );
 }
