@@ -2,9 +2,8 @@
 
 import React, {createContext, useEffect, useState} from 'react';
 import {api} from "../services/api";
-import {deleteItem, saveItem} from "@/src/services/storage";
+import {deleteItem, saveItem, getItem} from "@/src/services/storage";
 import {Redirect, router} from "expo-router";
-import {getItem} from "expo-secure-store";
 
 
 interface RegisterData {
@@ -20,7 +19,9 @@ interface User {
     id: string;
     email?: string;
     password?: string;
-    name?: string;
+    first_name?: string;
+    last_name?: string;
+    role?: string;
 }
 
 interface UserContextType {
@@ -59,28 +60,33 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 }
             });
 
-            console.log("Response from backend: ", response.data);
 
             if (!response) {
                 console.error("No response received from the server");
                 throw new Error("No response received from the server");
             }
 
+            console.log("Response from backend: ", response.data);
+
+
             // get data from backend
             const {id, access_token: token, token_type, role} = response.data;
 
-            const userData = {id, email, role}
+            // save the token in local storage
+            await saveItem('@stafy_token', token);
+
+            // call get user profile data
+            const userData = await getProfile()
+
+            // save the user data in local storage
+            await saveItem('@stafy_userData', JSON.stringify(userData));
 
             // save user data in state
             setUser(userData)
 
-            // save user and token in local storage
-            await saveItem('@stafy_userData', JSON.stringify(userData));
-            await saveItem('@stafy_token', token);
-
-
             // redirect to home page
-            console.log("Redirecting to home page\nToken: ", token, "\nId: ", id, "\nUser: ", userData);
+            console.log("Redirecting to home page\nToken: ", token, "\nId: ", id,
+                "\nName: ", userData.first_name ,"\nUser: ", userData);
             router.replace("/attendance");
 
         } catch (error: any) {
@@ -120,25 +126,74 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     async function logout() {
         // remove user data from state
         setUser(null);
-        await deleteItem('@stafy_id');
+        await deleteItem('@stafy_userData');
         await deleteItem('@stafy_token');
     }
 
-    useEffect(() => {
 
-        // check if user is logged in
-        const authCheck = async () => {
-            try {
-                const storedUserData = await getItem('@stafy_id');
-                const storedToken = await getItem('@stafy_token');
+    async function getProfile() {
 
-                // ToDO Finsih the useEffect
-            } catch (error) {
-                console.error("Error checking authentication:", error);
+        try{
+            setIsLoading(true);
+
+            const responseProfile = await api.get('/api/users/me/settings/profile')
+
+            if (!responseProfile) {
+                console.error("No response received from the server");
+                throw new Error("No response received from the server");
             }
+
+            //console.log("Response from profile response: ", responseProfile.data.current_user);
+
+            console.log("=== FULL RESPONSE ===");
+            console.log(JSON.stringify(responseProfile.data, null, 2));
+            console.log("=== CURRENT USER ===");
+            console.log(JSON.stringify(responseProfile.data.current_user, null, 2));
+
+
+
+            return responseProfile.data.current_user;
+
+        }catch (error: any) {
+            console.error(error.response.data.message)
+            throw new Error(error.response.data.message);
+        }finally {
+            setIsLoading(false);
         }
 
-    }, [])
+    }
+
+    // useEffect(() => {
+    //
+    //     // check if user is logged in
+    //     const authCheck = async () => {
+    //         try {
+    //             setIsLoading(true);
+    //
+    //             const storedUserData = await getItem('@stafy_userData');
+    //             const storedToken = await getItem('@stafy_token');
+    //
+    //             if (storedUserData && storedToken){
+    //                 setUser(JSON.parse(storedUserData));
+    //                 console.log("User data and token found in storage");
+    //             } else{
+    //                 console.error("No user data or token found in storage");
+    //             }
+    //
+    //         } catch (error) {
+    //             console.error("Error checking authentication:", error);
+    //
+    //             await deleteItem('@stafy_userData');
+    //             await deleteItem('@stafy_token');
+    //
+    //         }finally {
+    //             setIsLoading(false);
+    //         }
+    //     }
+    //
+    //     authCheck();
+    //
+    // }, [])
 
     return (
         <UserContext.Provider value={{user, isLoading, login, register, logout}}>

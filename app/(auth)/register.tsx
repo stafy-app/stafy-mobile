@@ -78,7 +78,7 @@ export default function RegisterScreen() {
                 <StafyLogoBlock width={102} height={102}/>
             </View>
 
-            {/* Header Section */}
+            {/* HeaderThemed Section */}
             <View className={"items-center"}>
                 <Text className={"text-secondary-900 text-4xl font-bold"}>Creeaza cont</Text>
                 <Text className={"mt-4 mb-4 text-lg font-light text-secondary-500"} >Alătură-te comunității Stafy și găsește cele
