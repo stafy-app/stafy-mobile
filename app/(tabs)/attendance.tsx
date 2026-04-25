@@ -1,6 +1,6 @@
 // app/(tabs)/attendance.tsx
 
-import {View, Text} from "react-native";
+import {View} from "react-native";
 
 import HeaderThemed from "@/src/components/HeaderThemed";
 import CalendarThemed from "@/src/components/attendance/CalendarThemed"

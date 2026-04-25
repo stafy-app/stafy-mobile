@@ -1,10 +1,8 @@
 // app/(tabs)/_layout.tsx
 
-import {Stack, Tabs} from "expo-router";
+import {Tabs} from "expo-router";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {Uniwind} from "uniwind";
-import {View} from "react-native";
-import UserProvider from "@/src/context/UserContext";
 import UserOnly from "@/src/components/auth/UserOnly";
 
 import {Clock, LayoutDashboard} from "lucide-react-native";

@@ -1,7 +1,6 @@
 // src/components/HeaderThemed.tsx
 
 import {View, Text} from "react-native";
-import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
 import {usePathname} from "expo-router";
 import routeHelper from "@/src/utils/routeHelper";
