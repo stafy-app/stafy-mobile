@@ -5,10 +5,10 @@
     "slug": "stafy-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./src/assets/Logo_Stafy.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./src/assets/Logo_Stafy.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,19 +18,26 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./src/assets/Logo_Stafy.png",
+        "backgroundImage": "./src/assets/Logo_Stafy.png",
+        "monochromeImage": "./src/assets/Logo_Stafy.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.stafymobile"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./src/assets/Logo_Stafy.png"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-router"
-    ]
+      "expo-router",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d9ecbe78-5e67-4326-a193-faec421660a0"
+      }
+    }
   }
 }
