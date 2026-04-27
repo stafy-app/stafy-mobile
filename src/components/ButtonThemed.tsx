@@ -8,12 +8,14 @@ type ButtonThemedProps = {
     variant?: "primary" | "";
     isLoading?: boolean;
     className?: string;
+    height?: string,
     onPress?: () => void;
 }
 
 export default function ButtonThemed({
                                          title = "Button",
                                          variant = "primary",
+                                         height = "h-14",
                                          isLoading = false,
                                          className = "",
                                          onPress = () =>null,
@@ -26,7 +28,7 @@ export default function ButtonThemed({
 
     return (
         <TouchableOpacity disabled={isLoading} activeOpacity={0.7}
-                          className={`w-full h-14 rounded-xl items-center justify-center flex-row ${bgClass}
+                          className={`w-full ${height} rounded-xl items-center justify-center flex-row ${bgClass}
                            shadow-sm shadow-primary-500/30
                             ${isLoading ? "opacity-50" : ""} ${className}`}
                           onPress={onPress}>

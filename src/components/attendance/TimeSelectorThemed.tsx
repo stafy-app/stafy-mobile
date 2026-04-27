@@ -30,7 +30,7 @@ interface TimeSelectorProps {
  *
  * @returns A themed cross-platform time selection UI.
  */
-export default function TimeSelectorThemed({ title, time, onTimeChange }: TimeSelectorProps) {
+export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSelectorProps) {
 
     // State to handle the visibility of the native mobile picker
     const [isPickerVisible, setIsPickerVisible] = useState<boolean>(false);

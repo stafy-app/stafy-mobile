@@ -15,6 +15,7 @@ interface Activity {
 
 interface ActivitySelectorProps {
     onActivitySelect: (activity: string) => void;
+    onRateSelect?: (rate: number) => void;
 }
 
 
@@ -26,11 +27,13 @@ interface ActivitySelectorProps {
  *
  * When an activity is selected, the component updates its internal selected activity
  * state and passes the selected activity name to the onActivitySelect callback.
+ * It also passes the selected activity rate to the onRateSelect callback.
  *
  * @param onActivitySelect - Callback called with the selected activity name.
+ * @param onRateSelect - Callback called with the selected activity hourly rate.
  * @returns A React component that renders the activity selector UI.
  */
-export default function ActivitySelectorThemed({onActivitySelect}: ActivitySelectorProps) {
+export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}: ActivitySelectorProps) {
 
     const [isLoading, setIsLoading] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -78,6 +81,9 @@ export default function ActivitySelectorThemed({onActivitySelect}: ActivitySelec
                                 onPress={() => {
                                     setSelectedActivity(activity.activity_name)
                                     onActivitySelect(activity.activity_name)
+                                    if (onRateSelect) {
+                                        onRateSelect(activity.hourly_rate_gross)
+                                    }
                                 }}
                                 className={`rounded-xl px-5 py-3 border border-secondary-200
                             ${selectedActivity === activity.activity_name ? 'bg-primary-500' : 'bg-white border-secondary-200'}`}
@@ -86,7 +92,7 @@ export default function ActivitySelectorThemed({onActivitySelect}: ActivitySelec
                                     className={`${selectedActivity === activity.activity_name ? 'text-white' : 'text-secondary-500'}`}
                                 >{activity.activity_name}</Text>
                             </TouchableOpacity>
-                        ), //console.log("Selected activity: ", selectedActivity)
+                        )
                     )}
             </View>
 

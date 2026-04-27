@@ -8,10 +8,26 @@ interface CustomPopupProps {
     title: string;
     message: string;
     buttonText?: string;
-    onClose: () => void;
+    onClose?: () => void;
 }
 
-export default function CustomPopup({
+
+
+/**
+ * Renders a themed modal popup with a title, message, and close button.
+ *
+ * The popup is displayed when the `visible` prop is true and uses a fade animation.
+ * It shows a semi-transparent overlay behind the popup content and calls `onClose`
+ * when the action button is pressed.
+ *
+ * @param visible - Controls whether the popup is displayed.
+ * @param title - Title text displayed at the top of the popup.
+ * @param message - Message text displayed inside the popup.
+ * @param buttonText - Optional text for the action button. Defaults to `"OK"`.
+ * @param onClose - Callback called when the popup action button is pressed.
+ * @returns A themed modal popup component.
+ */
+export default function PopupThemed({
                                         visible,
                                         title,
                                         message,
