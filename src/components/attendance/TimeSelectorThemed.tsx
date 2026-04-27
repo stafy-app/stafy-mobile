@@ -13,6 +13,23 @@ interface TimeSelectorProps {
     onTimeChange: (newTime: Date) => void;
 }
 
+
+/**
+ * Renders a themed time selector component that works across web and mobile platforms.
+ *
+ * On web, it displays a native HTML `input` of type `time`.
+ * On iOS and Android, it displays a touchable field that opens the native
+ * `DateTimePicker` in time selection mode.
+ *
+ * The component formats the selected time using a 24-hour `HH:mm` format and
+ * notifies the parent component whenever the user selects a new time.
+ *
+ * @param title - Label displayed above the time selector.
+ * @param time - Current selected time value.
+ * @param onTimeChange - Callback called with the updated `Date` when the time changes.
+ *
+ * @returns A themed cross-platform time selection UI.
+ */
 export default function TimeSelectorThemed({ title, time, onTimeChange }: TimeSelectorProps) {
 
     // State to handle the visibility of the native mobile picker
