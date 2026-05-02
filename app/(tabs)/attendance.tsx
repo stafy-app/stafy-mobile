@@ -11,6 +11,7 @@ import ActivitySelectorThemed from "@/src/components/attendance/ActivitySelector
 import TimeSelectorThemed from "@/src/components/attendance/TimeSelectorThemed";
 import CalculatorThemed from "@/src/components/attendance/CalculatorThemed";
 import PopupThemed from "@/src/components/PopupThemed";
+import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
 
 import {api} from "@/src/services/api";
 
@@ -45,6 +46,8 @@ export default function AttendanceScreen() {
 
             if (response) {
                 setShowSuccess(true)
+                setActivityName("")
+                setRate(0)
             }
         } catch (error) {
             console.error("Error saving time entry:", error);
@@ -53,52 +56,55 @@ export default function AttendanceScreen() {
     }
 
     return (
-        <ScrollView className={"flex-1 bg-secondary-50"}>
-            {/* HeaderThemed Section */}
-            <HeaderThemed/>
 
-            {/* Popup Success Section */}
-            {showSuccess ?
-                <PopupThemed title={"Salvat cu succes!"} message={"Înregistrarea este salvată în baza de date."}
-                             visible={showSuccess} onClose={() => setShowSuccess(false)}/>: null}
+        <SafeScreenWrapper>
+            <ScrollView className={"flex-1 bg-secondary-50"}>
+                {/* HeaderThemed Section */}
+                <HeaderThemed/>
 
-            {/* CalendarThemed Section */}
-            <View className={"mt-3 px-3"}>
-                <CalendarThemed onDateSelect={handleDateSelection}/>
-            </View>
+                {/* Popup Success Section */}
+                {showSuccess ?
+                    <PopupThemed title={"Salvat cu succes!"} message={"Înregistrarea este salvată în baza de date."}
+                                 visible={showSuccess} onClose={() => setShowSuccess(false)}/> : null}
 
-            {/* Activity Selector Section */}
-            <View className={"my-5 px-3"}>
-                <ActivitySelectorThemed onActivitySelect={
-                    (activityName) => setActivityName(activityName)}
-                                        onRateSelect={(rate) => setRate(rate)}/>
-            </View>
-
-
-            {/* Time Selector Section */}
-            <View className={"my-5 px-3"}>
-
-                <Text className={"font-semibold text-secondary-500 text-sm mb-2 uppercase tracking-wide"}>INTERVAL
-                    ORAR</Text>
-
-                <View className={"flex-row justify-between"}>
-                    <TimeSelectorThemed title={"ORA START"} time={startTime}
-                                        onTimeChange={(newTime) => setStartTime(newTime)}/>
-
-                    <TimeSelectorThemed title={"ORA STOP"} time={stopTime}
-                                        onTimeChange={(newTime) => setStopTime(newTime)}/>
+                {/* CalendarThemed Section */}
+                <View className={"mt-3 px-3"}>
+                    <CalendarThemed onDateSelect={handleDateSelection}/>
                 </View>
-            </View>
 
-            {/* Calculator Section */}
-            <View className={"my-5"}>
+                {/* Activity Selector Section */}
+                <View className={"my-5 px-3"}>
+                    <ActivitySelectorThemed onActivitySelect={
+                        (activityName) => setActivityName(activityName)}
+                                            onRateSelect={(rate) => setRate(rate)}/>
+                </View>
 
-                <CalculatorThemed className={"px-3"}
-                                  time={workedTime.totalHours} rate={rate} onSubmit={handleSaveToDb}/>
 
-            </View>
+                {/* Time Selector Section */}
+                <View className={"my-5 px-3"}>
 
-            {/*<Text>Attendance Screen</Text>*/}
-        </ScrollView>
+                    <Text className={"font-semibold text-secondary-500 text-sm mb-2 uppercase tracking-wide"}>INTERVAL
+                        ORAR</Text>
+
+                    <View className={"flex-row justify-between"}>
+                        <TimeSelectorThemed title={"ORA START"} time={startTime}
+                                            onTimeChange={(newTime) => setStartTime(newTime)}/>
+
+                        <TimeSelectorThemed title={"ORA STOP"} time={stopTime}
+                                            onTimeChange={(newTime) => setStopTime(newTime)}/>
+                    </View>
+                </View>
+
+                {/* Calculator Section */}
+                <View className={"my-5"}>
+
+                    <CalculatorThemed className={"px-3"}
+                                      time={workedTime.totalHours} rate={rate} onSubmit={handleSaveToDb}/>
+
+                </View>
+
+                {/*<Text>Attendance Screen</Text>*/}
+            </ScrollView>
+        </SafeScreenWrapper>
     )
 }

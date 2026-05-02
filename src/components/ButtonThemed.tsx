@@ -28,8 +28,7 @@ export default function ButtonThemed({
 
     return (
         <TouchableOpacity disabled={isLoading} activeOpacity={0.7}
-                          className={`w-full ${height} rounded-xl items-center justify-center flex-row ${bgClass}
-                           shadow-sm shadow-primary-500/30
+                          className={`w-full ${height} rounded-xl items-center justify-center flex-row ${bgClass} shadow-sm shadow-primary-500/30
                             ${isLoading ? "opacity-50" : ""} ${className}`}
                           onPress={onPress}>
 

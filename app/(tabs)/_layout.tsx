@@ -5,7 +5,7 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {Uniwind} from "uniwind";
 import UserOnly from "@/src/components/auth/UserOnly";
 
-import {Clock, LayoutDashboard} from "lucide-react-native";
+import {Clock, LayoutDashboard, History} from "lucide-react-native";
 
 
 export default function TabsLayout() {
@@ -13,43 +13,42 @@ export default function TabsLayout() {
 
     return (
         <UserOnly>
-            <SafeAreaView className="flex-1 bg-secondary-50">
-                <Tabs screenOptions={{
-                    headerShown: false,
+            <Tabs screenOptions={{
+                headerShown: false,
+                tabBarShowLabel: false,
+                tabBarActiveTintColor: "#F77518",
+                tabBarItemStyle: {
+                    justifyContent: "center",
+                    alignItems: "center",
+                },
+            }}>
 
-                    tabBarActiveTintColor: '#F77518',
-                    tabBarInactiveTintColor: '#94a3b8',
-                    tabBarShowLabel: false,
+                {/* Dashboard Tab */}
+                <Tabs.Screen name={"dashboard"}
+                             options={{
+                                 tabBarIcon: ({color, size}) => (
+                                     <LayoutDashboard color={color} size={size} />
+                                 )
+                             }} />
 
-                    tabBarStyle: {
-                        backgroundColor: '#ffffff',
-                        borderTopWidth: 1,
-                        borderTopColor: '#f1f5f9',
-                        height: 60,
-                        paddingBottom: 10,
-                    }
-                }}>
+                {/* Attendance Tab */}
+                <Tabs.Screen name={"attendance"}
+                             options={{
+                                 tabBarIcon: ({focused, color, size}) => (
+                                     <Clock color={focused ? color : "#64748b"} size={size}/>
+                                 )
+                             }}/>
 
-                    {/* Attendance Tab */}
-                    <Tabs.Screen name={"attendance"}
-                    options={{
-                        tabBarIcon: ({color, size}) => (
-                            <Clock color={color} size={size} />
-                        )
-                    }} />
+                {/* History Tab */}
+                <Tabs.Screen name={"history"}
+                             options={{
+                                 tabBarIcon: ({focused, color, size}) => (
+                                     <History color={focused ? color : "#64748b"} size={size}/>
+                                 )
+                             }}/>
 
-                    {/* Dashboard Tab */}
-                    <Tabs.Screen name={"dashboard"}
-                                 options={{
-                                     tabBarIcon: ({color, size}) => (
-                                         <LayoutDashboard color={color} size={size} />
-                                     )
-                                 }} />
 
-                    </Tabs>
-            </SafeAreaView>
+            </Tabs>
         </UserOnly>
-
-
     );
 }

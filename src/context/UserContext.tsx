@@ -73,13 +73,13 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             const {id, access_token: token, token_type, role} = response.data;
 
             // save the token in local storage
-            await saveItem('@stafy_token', token);
+            await saveItem('stafy_token', token);
 
             // call get user profile data
             const userData = await getProfile()
 
             // save the user data in local storage
-            await saveItem('@stafy_userData', JSON.stringify(userData));
+            await saveItem('stafy_userData', JSON.stringify(userData));
 
             // save user data in state
             setUser(userData)
@@ -87,7 +87,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             // redirect to home page
             console.log("Redirecting to home page\nToken: ", token, "\nId: ", id,
                 "\nName: ", userData.first_name ,"\nUser: ", userData);
-            router.replace("/attendance");
+            //router.replace("/attendance");
 
         } catch (error: any) {
             console.log(error.response.data.message)
@@ -126,8 +126,8 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     async function logout() {
         // remove user data from state
         setUser(null);
-        await deleteItem('@stafy_userData');
-        await deleteItem('@stafy_token');
+        await deleteItem('stafy_userData');
+        await deleteItem('stafy_token');
     }
 
 
@@ -163,37 +163,37 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
     }
 
-    // useEffect(() => {
-    //
-    //     // check if user is logged in
-    //     const authCheck = async () => {
-    //         try {
-    //             setIsLoading(true);
-    //
-    //             const storedUserData = await getItem('@stafy_userData');
-    //             const storedToken = await getItem('@stafy_token');
-    //
-    //             if (storedUserData && storedToken){
-    //                 setUser(JSON.parse(storedUserData));
-    //                 console.log("User data and token found in storage");
-    //             } else{
-    //                 console.error("No user data or token found in storage");
-    //             }
-    //
-    //         } catch (error) {
-    //             console.error("Error checking authentication:", error);
-    //
-    //             await deleteItem('@stafy_userData');
-    //             await deleteItem('@stafy_token');
-    //
-    //         }finally {
-    //             setIsLoading(false);
-    //         }
-    //     }
-    //
-    //     authCheck();
-    //
-    // }, [])
+    useEffect(() => {
+
+        // check if user is logged in
+        const authCheck = async () => {
+            try {
+                setIsLoading(true);
+
+                const storedUserData = await getItem('stafy_userData');
+                const storedToken = await getItem('stafy_token');
+
+                if (storedUserData && storedToken){
+                    setUser(JSON.parse(storedUserData));
+                    console.log("User data and token found in storage");
+                } else{
+                    console.error("No user data or token found in storage");
+                }
+
+            } catch (error) {
+                console.error("Error checking authentication:", error);
+
+                await deleteItem('stafy_userData');
+                await deleteItem('stafy_token');
+
+            }finally {
+                setIsLoading(false);
+            }
+        }
+
+        authCheck();
+
+    }, [])
 
     return (
         <UserContext.Provider value={{user, isLoading, login, register, logout}}>

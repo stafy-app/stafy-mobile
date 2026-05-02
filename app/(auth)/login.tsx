@@ -2,6 +2,7 @@
 
 import {View, Text, Alert} from "react-native";
 import {Link, router} from "expo-router";
+import {SafeAreaView} from "react-native-safe-area-context";
 
 import {Lock} from "lucide-react-native";
 
@@ -10,6 +11,7 @@ import TextInputThemed from "../../src/components/TextInputThemed";
 import ButtonThemed from "../../src/components/ButtonThemed";
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
+
 
 export default function LoginScreen() {
 
