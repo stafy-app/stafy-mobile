@@ -49,7 +49,7 @@ export default function DashboardScreen() {
 
     return (
         <SafeScreenWrapper>
-            <ScrollView>
+            <ScrollView className={"bg-secondary-50"}>
                 {/* Header Section */}
                 <View>
                     <HeaderThemed/>
