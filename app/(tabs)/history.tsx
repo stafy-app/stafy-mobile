@@ -44,7 +44,7 @@ export default function HistoryScreen() {
 
     return (
         <SafeScreenWrapper>
-            <ScrollView>
+            <ScrollView className={"bg-secondary-50"}>
 
                 {/* Header Section */}
                 <HeaderThemed/>
