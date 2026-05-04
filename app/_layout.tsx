@@ -8,6 +8,7 @@ import {SafeAreaProvider} from "react-native-safe-area-context";
 import {useEffect} from "react";
 import {deleteItem, getItem} from "@/src/services/storage";
 import {jwtDecode} from "jwt-decode";
+import {StatusBar} from "expo-status-bar";
 
 
 export default function RootLayout() {
@@ -35,11 +36,11 @@ export default function RootLayout() {
                     }
 
                     router.replace("/dashboard")
-                }catch (error){
+                } catch (error) {
                     console.error("Error decoding token:", error);
                     router.replace("/login")
                 }
-            } else{
+            } else {
                 router.replace("/login")
             }
         };
@@ -47,14 +48,18 @@ export default function RootLayout() {
     }, [])
 
     return (
-        <UserProvider>
-            <SafeAreaProvider>
-                <Stack screenOptions={{headerShown: false}}>
-                    <Stack.Screen name="index"/>
-                    <Stack.Screen name="(auth)"/>
-                    <Stack.Screen name="(tabs)"/>
-                </Stack>
-            </SafeAreaProvider>
-        </UserProvider>
-    );
+        <>
+            <StatusBar style="dark"/>
+
+            <UserProvider>
+                <SafeAreaProvider>
+                    <Stack screenOptions={{headerShown: false}}>
+                        <Stack.Screen name="index"/>
+                        <Stack.Screen name="(auth)"/>
+                        <Stack.Screen name="(tabs)"/>
+                    </Stack>
+                </SafeAreaProvider>
+            </UserProvider>
+        </>);
+
 }

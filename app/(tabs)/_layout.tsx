@@ -5,7 +5,7 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {Uniwind} from "uniwind";
 import UserOnly from "@/src/components/auth/UserOnly";
 
-import {Clock, LayoutDashboard, History} from "lucide-react-native";
+import {Clock, LayoutDashboard, History, User} from "lucide-react-native";
 
 
 export default function TabsLayout() {
@@ -44,6 +44,15 @@ export default function TabsLayout() {
                              options={{
                                  tabBarIcon: ({focused, color, size}) => (
                                      <History color={focused ? color : "#64748b"} size={size}/>
+                                 )
+                             }}/>
+
+
+                {/* Profile Tab */}
+                <Tabs.Screen name={"profile"}
+                             options={{
+                                 tabBarIcon: ({focused, color, size}) => (
+                                     <User color={focused ? color : "#64748b"} size={size}/>
                                  )
                              }}/>
 
