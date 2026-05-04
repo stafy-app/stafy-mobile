@@ -5,6 +5,7 @@ const pageTitles: Record<string, string> ={
     '/attendance': "Adaugă-ți Pontajul",
     '/history': 'Istoricul tau',
     '/dashboard': 'Dashboard',
+    '/profile': 'Profilul tău',
 }
 
 
