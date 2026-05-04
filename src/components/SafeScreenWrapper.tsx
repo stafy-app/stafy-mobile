@@ -13,7 +13,7 @@ export default function SafeScreenWrapper({children, className = "", ...props}: 
     const insets = useSafeAreaInsets();
 
     return (
-        <View className={`flex-1 ${className}`}
+        <View className={`flex-1 ${className} bg-white`}
               style={
                   {
                       paddingTop: insets.top,
