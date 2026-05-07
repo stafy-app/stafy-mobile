@@ -14,17 +14,19 @@ import TipCard from "@/src/components/profile/TipCard";
 import {BellRing, Clock, Scan, Wallet} from "lucide-react-native";
 import HourlyRateCard from "@/src/components/profile/HourlyRateCard";
 import PopupEdit from "@/src/components/profile/PopupEdit";
+import ButtonThemed from "@/src/components/ButtonThemed";
+import FooterThemed from "@/src/components/FooterThemed";
 
 export default function ProfileScreen() {
 
     const [rates, setRates] = useState<any[]>([])
-    
+
     // Popup state
     const [isPopupVisible, setIsPopupVisible] = useState(false);
     const [selectedRate, setSelectedRate] = useState<any>(null);
 
 
-    const {user} = useUser();
+    const {user, logout} = useUser();
 
     useFocusEffect(
         useCallback(() => {
@@ -50,12 +52,12 @@ export default function ProfileScreen() {
             fetchData()
         }, [])
     )
-    
+
     const handleRatePress = (rate: any) => {
         setSelectedRate(rate);
         setIsPopupVisible(true);
     }
-    
+
     const handleSaveRate = (newRateValue: string) => {
         console.log(`Saved new rate for ${selectedRate?.activity_name}: ${newRateValue}`);
         // Aici vei adăuga logica de API pentru a trimite valoarea către server
@@ -103,26 +105,33 @@ export default function ProfileScreen() {
                 <View className={"mt-10 mx-5"}>
                     <Text className={"font-semibold text-lg mb-5"}>Tarife Orare</Text>
 
-                    {rates?
-                    rates.map((rate) => (
-                        <HourlyRateCard 
-                            key={rate.activity_id} 
-                            title={rate.activity_name}
-                            subtitle={""} 
-                            price={rate.hourly_rate_gross.toString() + " RON"} 
-                            unitLabel={"per Oră"} 
-                            onPress={() => handleRatePress(rate)}
-                        />
-                    ))
-                    : null}
+                    {rates ?
+                        rates.map((rate) => (
+                            <HourlyRateCard
+                                key={rate.activity_id}
+                                title={rate.activity_name}
+                                subtitle={""}
+                                price={rate.hourly_rate_gross.toString() + " RON"}
+                                unitLabel={"per Oră"}
+                                onPress={() => handleRatePress(rate)}
+                            />
+                        ))
+                        : null}
 
 
                 </View>
 
+                {/* LogOut Section */}
+                <View className={"my-10 mx-5"}>
+                    <ButtonThemed title={"Deconectare"} onPress={logout} height={"h-12"}/>
+                </View>
+
+                {/* Footer Section */}
+                <FooterThemed />
             </ScrollView>
-            
+
             {/* Popup component */}
-            <PopupEdit 
+            <PopupEdit
                 visible={isPopupVisible}
                 title={`Editează Tariful Orar - ${selectedRate?.activity_name || ''}`}
                 initialValue={selectedRate?.hourly_rate_gross.toString() || ''}
