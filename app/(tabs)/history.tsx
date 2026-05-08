@@ -18,6 +18,20 @@ export default function HistoryScreen() {
 
     const {logout} = useUser();
 
+    const handleDeleteEntry = async (entryId: number) => {
+        try{
+            const response = await api.delete(`/dashboard/employee/time-entry/${entryId}`)
+
+            if (response.data.message){
+                console.log("[INFO] Entry deleted successfully")
+                // Remove the entry from the state
+                setTimeEntries(timeEntries.filter((entry: any) => entry.id !== entryId))
+            }
+        }catch (error){
+            console.error("Failed to delete entry", error)
+        }
+    }
+
     useFocusEffect(
         useCallback(() => {
 
@@ -50,7 +64,7 @@ export default function HistoryScreen() {
                 <HeaderThemed/>
 
                 {/* History Table Section */}
-                <HistoryTable timeEntries={timeEntries}/>
+                <HistoryTable timeEntries={timeEntries} onDelete={handleDeleteEntry}/>
 
             </ScrollView>
         </SafeScreenWrapper>

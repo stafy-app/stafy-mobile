@@ -66,7 +66,7 @@ export default function DashboardScreen() {
                 </View>
 
                 {/* Pie Chart Section */}
-                <View className={"mt-10 px-4"}>
+                <View className={"my-10 px-4"}>
                     <PieChartData timeEntries={timeEntries} timeTotal={totalHours}/>
                 </View>
             </ScrollView>

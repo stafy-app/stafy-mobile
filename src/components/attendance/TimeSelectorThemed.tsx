@@ -34,10 +34,8 @@ export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSel
 
     // State to handle the visibility of the native mobile picker
     const [isPickerVisible, setIsPickerVisible] = useState<boolean>(false);
-
-    /**
-     * Handler for mobile native DateTimePicker.
-     */
+    
+     // Handler for mobile native DateTimePicker.
     const handleMobileTimeSelection = (event: DateTimePickerEvent, selectedDate?: Date) => {
         // Android dismisses the picker automatically, iOS might need manual handling
         if (Platform.OS === "android") {
@@ -49,10 +47,9 @@ export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSel
             onTimeChange(selectedDate);
         }
     };
-
-    /**
-     * Handler for Web standard HTML <input type="time">.
-     */
+    
+    
+    // Handler for Web standard HTML <input type="time">.
     const handleWebTimeSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
         const timeString = event.target.value; // Expected format: "HH:mm"
 
@@ -66,10 +63,9 @@ export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSel
             onTimeChange(updatedDate);
         }
     };
-
-    /**
-     * Utility to format the Date object into a 24h "HH:mm" string.
-     */
+    
+    
+    // Utility to format the Date object into a 24h "HH:mm" string.
     const formatTime24h = (dateObj: Date): string => {
         const hours = dateObj.getHours().toString().padStart(2, "0");
         const minutes = dateObj.getMinutes().toString().padStart(2, "0");
@@ -79,7 +75,7 @@ export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSel
     const formattedTime = formatTime24h(time);
 
     return (
-        <View className="flex-col my-2">
+        <View className="flex-col my-2 w-[48%]">
             {/* Header Label */}
             <Text className="text-secondary-500 font-bold text-xs mb-2 uppercase tracking-wide">
                 {title}
@@ -114,7 +110,7 @@ export default function TimeSelectorThemed({ title, time, onTimeChange}: TimeSel
                     onPress={() => setIsPickerVisible(true)}
                     className="bg-white border border-secondary-200 rounded-xl px-5 py-3"
                 >
-                    <Text className="text-secondary-900 text-lg">
+                    <Text className="text-secondary-900 text-lg text-center">
                         {formattedTime}
                     </Text>
                 </TouchableOpacity>
