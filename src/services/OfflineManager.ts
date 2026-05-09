@@ -63,6 +63,7 @@ export const OfflineManager = {
                 };
             }catch (error) {
                 console.error(`Error posting data to API ${endpoint} :`, error);
+                throw error;
             }
         }
 

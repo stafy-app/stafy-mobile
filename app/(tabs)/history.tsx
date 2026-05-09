@@ -45,8 +45,8 @@ export default function HistoryScreen() {
                         return
                     }
 
-                    console.log("[INFO] Data fetched successfully", response.data.time_entries)
-                    setTimeEntries(response.data.time_entries)
+                    console.log("[INFO] Data fetched successfully", response.time_entries)
+                    setTimeEntries(response.time_entries)
                 }catch (error){
                     console.error("Failed to fetch data", error)
                 }
