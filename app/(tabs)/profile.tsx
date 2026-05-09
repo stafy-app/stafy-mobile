@@ -1,6 +1,6 @@
 // app/(tabs)/profile.tsx
 
-import {View, Text, ScrollView} from "react-native";
+import {View, Text, ScrollView, TouchableOpacity} from "react-native";
 import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
 
 import HeaderThemed from "@/src/components/HeaderThemed";
@@ -11,18 +11,21 @@ import {api} from "@/src/services/api";
 import useUser from "@/src/hooks/useUser";
 import TipCard from "@/src/components/profile/TipCard";
 
-import {BellRing, Clock, Scan, Wallet} from "lucide-react-native";
+import {BellRing, Clock, Scan, Wallet, Plus} from "lucide-react-native";
 import HourlyRateCard from "@/src/components/profile/HourlyRateCard";
 import PopupEdit from "@/src/components/profile/PopupEdit";
 import ButtonThemed from "@/src/components/ButtonThemed";
 import FooterThemed from "@/src/components/FooterThemed";
+import {OfflineManager} from "@/src/services/OfflineManager";
+import PopupAddRate from "@/src/components/profile/PopupAddRate";
 
 export default function ProfileScreen() {
 
     const [rates, setRates] = useState<any[]>([])
 
-    // Popup state
-    const [isPopupVisible, setIsPopupVisible] = useState(false);
+    // Popup states
+    const [isEditPopupVisible, setIsEditPopupVisible] = useState(false);
+    const [isAddPopupVisible, setIsAddPopupVisible] = useState(false);
     const [selectedRate, setSelectedRate] = useState<any>(null);
 
 
@@ -31,38 +34,74 @@ export default function ProfileScreen() {
     useFocusEffect(
         useCallback(() => {
 
-            const fetchData = async () => {
-                try {
-                    const response = await api.get("/api/users/me/settings/hourly-rates")
-
-                    if (!response) {
-                        console.error("Failed to fetch data")
-                        return
-                    }
-
-                    console.log("[INFO] Data fetched successfully", response.data.rates)
-                    setRates(response.data.rates)
-                    //console.log("[INFO] User data: ", user)
-
-                } catch (error) {
-                    console.error("Failed to fetch data", error)
-                }
-            }
-
             fetchData()
         }, [])
     )
 
-    const handleRatePress = (rate: any) => {
-        setSelectedRate(rate);
-        setIsPopupVisible(true);
+    const fetchData = async () => {
+        try {
+            const response = await OfflineManager.apiGet("/api/users/me/settings/hourly-rates")
+
+            if (!response) {
+                console.error("Failed to fetch data")
+                return
+            }
+
+            console.log("[INFO] Data fetched successfully", response.rates)
+            setRates(response.rates)
+            //console.log("[INFO] User data: ", user)
+
+        } catch (error) {
+            console.error("Failed to fetch data", error)
+        }
     }
 
-    const handleSaveRate = (newRateValue: string) => {
+    const handleRatePress = (rate: any) => {
+        setSelectedRate(rate);
+        setIsEditPopupVisible(true);
+    }
+
+    const handleSaveRate = async (newRateValue: string) => {
         console.log(`Saved new rate for ${selectedRate?.activity_name}: ${newRateValue}`);
-        // Aici vei adăuga logica de API pentru a trimite valoarea către server
-        // api.put(`/api/rates/${selectedRate.id}`, { rate: newRateValue })
-        setIsPopupVisible(false);
+        console.log("[INFO] Selected rate: ", selectedRate)
+
+        try{
+            const response = await api.patch("/api/users/me/settings/hourly-rates", {
+                "activity_id": selectedRate.activity_id,
+                "hourly_rate_gross": newRateValue,
+            })
+
+            if (response){
+                console.log("[INFO] Rate updated successfully")
+            }
+
+            // Refresh the data
+            fetchData()
+
+        }catch(error){
+            console.error("Failed to update rate", error)
+        }
+
+        setIsEditPopupVisible(false);
+    }
+    
+    const handleAddRate = async (activityName: string, rate: string) => {
+        console.log(`Adding new rate: ${activityName} - ${rate}`);
+        
+        try{
+            const response = await OfflineManager.apiPost("/api/users/me/settings/activities",{
+                "activity_name": activityName,
+                "hourly_rate_gross": rate
+
+            })
+
+            fetchData()
+
+        } catch (error) {
+            console.error("Failed to add rate", error)
+        }
+        
+        setIsAddPopupVisible(false);
     }
 
 
@@ -103,7 +142,12 @@ export default function ProfileScreen() {
                 {/* Hourly Rates Section */}
 
                 <View className={"mt-10 mx-5"}>
-                    <Text className={"font-semibold text-lg mb-5"}>Tarife Orare</Text>
+                    <View className="flex-row justify-between items-center mb-5">
+                        <Text className={"font-semibold text-lg"}>Tarife Orare</Text>
+                        <TouchableOpacity onPress={() => setIsAddPopupVisible(true)} className="p-1">
+                            <Plus size={24} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
 
                     {rates ?
                         rates.map((rate) => (
@@ -130,13 +174,20 @@ export default function ProfileScreen() {
                 <FooterThemed />
             </ScrollView>
 
-            {/* Popup component */}
+            {/* Popup for Editing */}
             <PopupEdit
-                visible={isPopupVisible}
+                visible={isEditPopupVisible}
                 title={`Editează Tariful Orar - ${selectedRate?.activity_name || ''}`}
                 initialValue={selectedRate?.hourly_rate_gross.toString() || ''}
                 onSave={handleSaveRate}
-                onCancel={() => setIsPopupVisible(false)}
+                onCancel={() => setIsEditPopupVisible(false)}
+            />
+            
+            {/* Popup for Adding */}
+            <PopupAddRate 
+                visible={isAddPopupVisible}
+                onSave={handleAddRate}
+                onCancel={() => setIsAddPopupVisible(false)}
             />
         </SafeScreenWrapper>
 

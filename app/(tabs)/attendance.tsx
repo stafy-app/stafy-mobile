@@ -14,6 +14,7 @@ import PopupThemed from "@/src/components/PopupThemed";
 import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
 
 import {api} from "@/src/services/api";
+import {OfflineManager} from "@/src/services/OfflineManager";
 
 
 export default function AttendanceScreen() {
@@ -38,7 +39,7 @@ export default function AttendanceScreen() {
     const handleSaveToDb = async () => {
 
         try {
-            const response = await api.post("/dashboard/employee/time-entry", {
+            const response = await OfflineManager.apiPost("/dashboard/employee/time-entry", {
                 "time_start": startTime.toISOString(),
                 "time_end": stopTime.toISOString(),
                 "activity": activityName

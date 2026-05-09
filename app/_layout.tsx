@@ -9,6 +9,10 @@ import {useEffect} from "react";
 import {deleteItem, getItem} from "@/src/services/storage";
 import {jwtDecode} from "jwt-decode";
 import {StatusBar} from "expo-status-bar";
+import checkNetwork from "@/src/utils/networkHelper";
+import {OfflineManager} from "@/src/services/OfflineManager";
+import NetInfo from "@react-native-community/netinfo";
+
 
 
 export default function RootLayout() {
@@ -17,6 +21,7 @@ export default function RootLayout() {
 
     useEffect(() => {
 
+        // Authentication check
         const checkAuth = async () => {
             const token = await getItem("stafy_token")
 
@@ -44,7 +49,21 @@ export default function RootLayout() {
                 router.replace("/login")
             }
         };
+
         checkAuth();
+
+        // Offline mode sync
+        const unsubscribeNetwork = NetInfo.addEventListener(state => {
+            // If the phone reconnects to the internet, sync the data
+            if (state.isConnected && state.isInternetReachable) {
+                console.log("Phone reconnected to the internet, syncing data...")
+                OfflineManager.apiSync();
+            }
+        })
+
+        // Cleanup subscription on unmounting, preventing memory leaks
+        return () => unsubscribeNetwork();
+
     }, [])
 
     return (
