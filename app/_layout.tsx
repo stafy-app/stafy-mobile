@@ -5,7 +5,7 @@ import {router, Stack} from "expo-router";
 import UserProvider from "@/src/context/UserContext";
 import {Uniwind} from "uniwind";
 import {SafeAreaProvider} from "react-native-safe-area-context";
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {deleteItem, getItem} from "@/src/services/storage";
 import {jwtDecode} from "jwt-decode";
 import {StatusBar} from "expo-status-bar";
@@ -18,6 +18,8 @@ import NetInfo from "@react-native-community/netinfo";
 export default function RootLayout() {
     Uniwind.setTheme('light');
 
+    // Ref to hold the debounce timer for network sync
+    const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
 
@@ -52,17 +54,31 @@ export default function RootLayout() {
 
         checkAuth();
 
-        // Offline mode sync
+        // Offline mode sync — debounced to 2s to avoid multiple rapid triggers
+        // NetInfo can emit several events in quick succession when reconnecting
         const unsubscribeNetwork = NetInfo.addEventListener(state => {
-            // If the phone reconnects to the internet, sync the data
             if (state.isConnected && state.isInternetReachable) {
-                console.log("Phone reconnected to the internet, syncing data...")
-                OfflineManager.apiSync();
-            }
-        })
 
-        // Cleanup subscription on unmounting, preventing memory leaks
-        return () => unsubscribeNetwork();
+                // Cancel any previously scheduled sync
+                if (syncTimeoutRef.current) {
+                    clearTimeout(syncTimeoutRef.current);
+                }
+
+                // Schedule the sync after 2s — by then the connection is stable
+                syncTimeoutRef.current = setTimeout(() => {
+                    console.log("Network stable. Starting offline queue sync...");
+                    OfflineManager.apiSync();
+                }, 2000);
+            }
+        });
+
+        // Cleanup subscription and pending timer on unmounting
+        return () => {
+            unsubscribeNetwork();
+            if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current);
+            }
+        };
 
     }, [])
 

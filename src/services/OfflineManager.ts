@@ -5,7 +5,7 @@ import checkNetwork from "@/src/utils/networkHelper";
 import {api} from "@/src/services/api";
 
 const GLOBAL_QUEUE_KEY = '@global_offline_queue';
-
+let isSyncing = false; // For syncing mechanism
 
 export const OfflineManager = {
 
@@ -63,7 +63,8 @@ export const OfflineManager = {
                 };
             }catch (error) {
                 console.error(`Error posting data to API ${endpoint} :`, error);
-                throw error;
+                // If there is an error, throw the error
+                throw error; 
             }
         }
 
@@ -104,6 +105,12 @@ export const OfflineManager = {
 
     async apiSync() {
 
+        // Locking mechanism to prevent multiple syncs at the same time
+        if (isSyncing) {
+            console.log("Sync already in progress. Skipping this trigger.");
+            return;
+        }
+
         const TextQueueList = await AsyncStorage.getItem(GLOBAL_QUEUE_KEY);
 
         // If there is no queue, return
@@ -125,7 +132,10 @@ export const OfflineManager = {
             return
         }
 
-        console.log(`Found ${queueList.length} items in the queue`);
+        console.log(`Found ${queueList.length} items in the queue. Starting sync...`);
+        
+        // Block other syncs until this one is done
+        isSyncing = true;
 
         // Loop through the queue list
         let remainingItems = [...queueList];
@@ -140,6 +150,9 @@ export const OfflineManager = {
                 // Remove the item from the remaining items list
                 remainingItems.shift();
                 console.log(`Item sync to ${item.endpoint} successfully`)
+                
+                // Save the remaining items to AsyncStorage
+                await AsyncStorage.setItem(GLOBAL_QUEUE_KEY, JSON.stringify(remainingItems));
 
             } catch (error){
                 console.error(`Error sync item to ${item.endpoint} :`, error);
@@ -147,6 +160,9 @@ export const OfflineManager = {
                 // If there is an error, the rest of the items remain in the queue (on the phone)
                 const TextRemainingItems = JSON.stringify(remainingItems);
                 await AsyncStorage.setItem(GLOBAL_QUEUE_KEY, TextRemainingItems);
+                
+                // Unlock the sync mechanism
+                isSyncing = false;
                 return;
             }
         }
@@ -154,6 +170,9 @@ export const OfflineManager = {
         // If there are no more items in the queue, remove the queue from AsyncStorage
         await AsyncStorage.removeItem(GLOBAL_QUEUE_KEY);
         console.log("Queue removed successfully! All data synced!");
+        
+        // Deblocăm mecanismul
+        isSyncing = false;
 
     }
 };

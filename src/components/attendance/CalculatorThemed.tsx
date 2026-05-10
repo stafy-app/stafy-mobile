@@ -27,7 +27,9 @@ export default function CalculatorThemed({time, rate, className, onSubmit}: Calc
 
     useEffect(() => {
         if (time > 0 && rate > 0) {
-            setTotal(time * rate);
+            // Calculate total using decimal hours and rounding to 2 decimal
+            const calculatedTotal = time * rate;
+            setTotal(Number(calculatedTotal.toFixed(2)));
         } else {
             setTotal(0);
         }
@@ -37,13 +39,16 @@ export default function CalculatorThemed({time, rate, className, onSubmit}: Calc
     // console.log("Time: ", time)
     // console.log("Total: ", total)
 
+    // Format time to show maximum 2 decimal places if needed, otherwise show integer
+    const displayTime = Number.isInteger(time) ? time : Number(time.toFixed(2));
+
     return (
         <View className={"w-full bg-white/80 h-19"}>
             <View className={`${className}`}>
                 <View className={"py-2 flex-row justify-between items-center"}>
 
                     <Text className={"text-secondary-500 font-semibold text-sm"}>Calcul Estimativ</Text>
-                    <Text className={"text-secondary-900 font-bold text-sm"}>{time}h x {rate}RON =
+                    <Text className={"text-secondary-900 font-bold text-sm"}>{displayTime}h x {rate}RON =
                         <Text className={"text-primary-500"}> {total}RON</Text>
                     </Text>
 

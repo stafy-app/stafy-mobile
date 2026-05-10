@@ -1,6 +1,6 @@
 // app/(tabs)/profile.tsx
 
-import {View, Text, ScrollView, TouchableOpacity} from "react-native";
+import {View, Text, ScrollView, TouchableOpacity, Vibration} from "react-native";
 import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
 
 import HeaderThemed from "@/src/components/HeaderThemed";
@@ -18,6 +18,7 @@ import ButtonThemed from "@/src/components/ButtonThemed";
 import FooterThemed from "@/src/components/FooterThemed";
 import {OfflineManager} from "@/src/services/OfflineManager";
 import PopupAddRate from "@/src/components/profile/PopupAddRate";
+import DeletePopupThemed from "@/src/components/DeletePopupThemed";
 
 export default function ProfileScreen() {
 
@@ -26,6 +27,7 @@ export default function ProfileScreen() {
     // Popup states
     const [isEditPopupVisible, setIsEditPopupVisible] = useState(false);
     const [isAddPopupVisible, setIsAddPopupVisible] = useState(false);
+    const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false);
     const [selectedRate, setSelectedRate] = useState<any>(null);
 
 
@@ -59,6 +61,13 @@ export default function ProfileScreen() {
     const handleRatePress = (rate: any) => {
         setSelectedRate(rate);
         setIsEditPopupVisible(true);
+    }
+    
+    const handleRateLongPress = (rate: any) => {
+        Vibration.vibrate(100);
+        //console.log(`Long press on rate: ${rate.activity_id}`);
+        setSelectedRate(rate);
+        setIsDeletePopupVisible(true);
     }
 
     const handleSaveRate = async (newRateValue: string) => {
@@ -102,6 +111,24 @@ export default function ProfileScreen() {
         }
         
         setIsAddPopupVisible(false);
+    }
+    
+    const handleDeleteRate = async () => {
+        console.log(`Deleting rate: ${selectedRate?.activity_name}`);
+        
+        try {
+
+           const response = await api.delete(`/api/users/me/settings/activities/${selectedRate.activity_id}`)
+            
+            // Update local state temporarily for fast UI response
+            setRates(rates.filter((rate) => rate.activity_id !== selectedRate.activity_id));
+            
+            console.log("[INFO] Rate deleted successfully");
+        } catch (error) {
+            console.error("Failed to delete rate", error);
+        }
+        
+        setIsDeletePopupVisible(false);
     }
 
 
@@ -158,6 +185,7 @@ export default function ProfileScreen() {
                                 price={rate.hourly_rate_gross.toString() + " RON"}
                                 unitLabel={"per Oră"}
                                 onPress={() => handleRatePress(rate)}
+                                onLongPress={() => handleRateLongPress(rate)}
                             />
                         ))
                         : null}
@@ -188,6 +216,13 @@ export default function ProfileScreen() {
                 visible={isAddPopupVisible}
                 onSave={handleAddRate}
                 onCancel={() => setIsAddPopupVisible(false)}
+            />
+            
+            {/* Delete Popup */}
+            <DeletePopupThemed 
+                visible={isDeletePopupVisible}
+                onCancel={() => setIsDeletePopupVisible(false)}
+                onConfirm={handleDeleteRate}
             />
         </SafeScreenWrapper>
 

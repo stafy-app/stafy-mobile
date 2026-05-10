@@ -38,6 +38,11 @@ export default function AttendanceScreen() {
 
     const handleSaveToDb = async () => {
 
+        if(!activityName) {
+            alert("Te rog selectează o activitate!");
+            return;
+        }
+
         try {
             const response = await OfflineManager.apiPost("/dashboard/employee/time-entry", {
                 "time_start": startTime.toISOString(),
