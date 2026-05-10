@@ -11,6 +11,7 @@ import HistoryTable from "@/src/components/history/HistoryTable";
 import {useCallback, useEffect, useState} from "react";
 import useUser from "@/src/hooks/useUser";
 import {useFocusEffect} from "expo-router";
+import {OfflineManager} from "@/src/services/OfflineManager";
 
 export default function HistoryScreen() {
 
@@ -37,15 +38,15 @@ export default function HistoryScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await api.get("/dashboard/employee")
+                    const response = await OfflineManager.apiGet("/dashboard/employee")
 
                     if (!response){
                         console.error("Failed to fetch data")
                         return
                     }
 
-                    console.log("[INFO] Data fetched successfully", response.data.time_entries)
-                    setTimeEntries(response.data.time_entries)
+                    console.log("[INFO] Data fetched successfully", response.time_entries)
+                    setTimeEntries(response.time_entries)
                 }catch (error){
                     console.error("Failed to fetch data", error)
                 }

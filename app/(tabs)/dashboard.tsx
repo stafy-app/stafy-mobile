@@ -13,6 +13,7 @@ import {useCallback, useState} from "react";
 import {api} from "@/src/services/api";
 import {PieChart} from "react-native-gifted-charts";
 import PieChartData from "@/src/components/dashboard/PieChartData";
+import {OfflineManager} from "@/src/services/OfflineManager";
 
 export default function DashboardScreen() {
 
@@ -25,7 +26,7 @@ export default function DashboardScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await api.get("/dashboard/employee")
+                    const response = await OfflineManager.apiGet("/dashboard/employee")
 
                     if (!response) {
                         console.error("Failed to fetch data")
@@ -34,9 +35,9 @@ export default function DashboardScreen() {
 
                     console.log("[INFO] Data fetched successfully", response.data)
 
-                    setTotalHours(response.data.total_hours)
-                    setTotalMoney(response.data.total_gross_salary)
-                    setTimeEntries(response.data.time_entries)
+                    setTotalHours(response.total_hours)
+                    setTotalMoney(response.total_gross_salary)
+                    setTimeEntries(response.time_entries)
                 } catch (error) {
                     console.error("Failed to fetch data", error)
                 }

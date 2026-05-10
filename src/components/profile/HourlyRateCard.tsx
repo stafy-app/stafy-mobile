@@ -9,6 +9,7 @@ interface HourlyRateCardProps {
     price: string;
     unitLabel: string;
     onPress?: () => void;
+    onLongPress?: () => void;
 }
 
 export default function HourlyRateCard({
@@ -16,12 +17,15 @@ export default function HourlyRateCard({
                                     subtitle,
                                     price,
                                     unitLabel,
-                                    onPress
+                                    onPress,
+                                    onLongPress
                                 }: HourlyRateCardProps) {
     return (
         <TouchableOpacity
             activeOpacity={0.7}
             onPress={onPress}
+            onLongPress={onLongPress}
+            delayLongPress={500}
             className="bg-white rounded-2xl p-5 flex-row justify-between items-center shadow-sm border border-secondary-50 w-full mb-3"
         >
 

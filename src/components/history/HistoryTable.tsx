@@ -54,6 +54,10 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
                     // Check if it's the last item to remove the bottom border
                     const isLastItem = index === timeEntries.length - 1;
 
+                    // Use activity_hours directly from the backend (already in hours)
+                    // activity_total is in RON, NOT minutes — do not divide by 60
+                    const durationInHours = Number(item.activity_hours.toFixed(2));
+
                     return (
                         <TouchableOpacity
                             key={item.id}
@@ -75,7 +79,7 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
                             {/* Duration Column */}
                             <View className="flex-1 items-center justify-center">
                                 <Text
-                                    className="text-sm font-bold text-secondary-900">{item.activity_total / 60}h</Text>
+                                    className="text-sm font-bold text-secondary-900">{durationInHours}h</Text>
                             </View>
 
                             {/* Rate Column */}
