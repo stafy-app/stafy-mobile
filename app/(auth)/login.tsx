@@ -22,8 +22,8 @@ export default function LoginScreen() {
     const {login} = useUser();
 
     const handleLogin = async () =>{
-        //console.log("Login");
-       // console.log(email);
+        // Set loading state to true before starting the login process
+        setIsLoading(true);
 
         try{
 
