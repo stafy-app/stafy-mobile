@@ -4,8 +4,8 @@ import {View, Text, ScrollView} from "react-native";
 
 import {Clock, Wallet} from "lucide-react-native";
 
-import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
-import HeaderThemed from "@/src/components/HeaderThemed";
+import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
+import HeaderThemed from "@/src/components/ui/HeaderThemed";
 
 import InfoCard from "@/src/components/dashboard/InfoCard";
 import {useFocusEffect} from "expo-router";
@@ -13,31 +13,26 @@ import {useCallback, useState} from "react";
 import {api} from "@/src/services/api";
 import {PieChart} from "react-native-gifted-charts";
 import PieChartData from "@/src/components/dashboard/PieChartData";
-import {OfflineManager} from "@/src/services/OfflineManager";
+import {DashboardData, TimeEntry} from "@/src/types/api";
 
 export default function DashboardScreen() {
 
     const [totalHours, setTotalHours] = useState<number>(0)
     const [totalMoney, setTotalMoney] = useState<number>(0)
-    const [timeEntries, setTimeEntries] = useState<any[]>([])
+    const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
 
     useFocusEffect(
         useCallback(() => {
 
             const fetchData = async () => {
                 try {
-                    const response = await OfflineManager.apiGet("/dashboard/employee")
-
-                    if (!response) {
-                        console.error("Failed to fetch data")
-                        return
-                    }
+                    const response = await api.get<DashboardData>("/dashboard/employee")
 
                     console.log("[INFO] Data fetched successfully", response.data)
 
-                    setTotalHours(response.total_hours)
-                    setTotalMoney(response.total_gross_salary)
-                    setTimeEntries(response.time_entries)
+                    setTotalHours(response.data.total_hours)
+                    setTotalMoney(response.data.total_gross_salary)
+                    setTimeEntries(response.data.time_entries)
                 } catch (error) {
                     console.error("Failed to fetch data", error)
                 }

@@ -1,5 +1,4 @@
-// src/DeletePopupThemed.tsx
-
+// src/components/ui/DeletePopupThemed.tsx
 
 import { View, Text, Modal, TouchableOpacity } from 'react-native';
 
@@ -13,20 +12,6 @@ interface DeletePopupProps {
     onConfirm: () => void;
 }
 
-/**
- * Renders a themed modal popup specifically for destructive actions (Delete).
- *
- * It shows a semi-transparent overlay behind the popup content and provides
- * two distinct buttons: a neutral Cancel button and a red/destructive Confirm button.
- *
- * @param visible - Controls whether the popup is displayed.
- * @param title - Title text displayed at the top of the popup. Defaults to "Ești sigur?".
- * @param message - Message text displayed inside the popup.
- * @param cancelText - Text for the cancel button. Defaults to "Anulare".
- * @param confirmText - Text for the confirm/delete button. Defaults to "Șterge".
- * @param onCancel - Callback called when the cancel action is pressed or the modal is dismissed.
- * @param onConfirm - Callback called when the destructive/confirm action is pressed.
- */
 export default function DeletePopupThemed({
                                               visible,
                                               title = "Ești sigur?",
@@ -42,7 +27,7 @@ export default function DeletePopupThemed({
             transparent={true}
             visible={visible}
             animationType="fade"
-            onRequestClose={onCancel} // For android: close the modal when back button is pressed
+            onRequestClose={onCancel}
         >
             <View className="flex-1 bg-black/50 justify-center items-center px-6">
 
@@ -56,10 +41,8 @@ export default function DeletePopupThemed({
                         {message}
                     </Text>
 
-                    {/* Row of Buttons (Cancel & Confirm)*/}
                     <View className="flex-row justify-between w-full gap-3">
 
-                        {/*Cancel Button */}
                         <TouchableOpacity
                             onPress={onCancel}
                             activeOpacity={0.7}
@@ -70,7 +53,6 @@ export default function DeletePopupThemed({
                             </Text>
                         </TouchableOpacity>
 
-                        {/* Confirm Button */}
                         <TouchableOpacity
                             onPress={onConfirm}
                             activeOpacity={0.7}

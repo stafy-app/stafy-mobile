@@ -1,9 +1,9 @@
 // app/(tabs)/profile.tsx
 
 import {View, Text, ScrollView, TouchableOpacity, Vibration} from "react-native";
-import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
+import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
-import HeaderThemed from "@/src/components/HeaderThemed";
+import HeaderThemed from "@/src/components/ui/HeaderThemed";
 import ProfileInfo from "@/src/components/profile/ProfileInfo";
 import {useFocusEffect} from "expo-router";
 import {useCallback, useState} from "react";
@@ -14,69 +14,65 @@ import TipCard from "@/src/components/profile/TipCard";
 import {BellRing, Clock, Scan, Wallet, Plus} from "lucide-react-native";
 import HourlyRateCard from "@/src/components/profile/HourlyRateCard";
 import PopupEdit from "@/src/components/profile/PopupEdit";
-import ButtonThemed from "@/src/components/ButtonThemed";
-import FooterThemed from "@/src/components/FooterThemed";
-import {OfflineManager} from "@/src/services/OfflineManager";
+import ButtonThemed from "@/src/components/ui/ButtonThemed";
+import FooterThemed from "@/src/components/ui/FooterThemed";
 import PopupAddRate from "@/src/components/profile/PopupAddRate";
-import DeletePopupThemed from "@/src/components/DeletePopupThemed";
+import DeletePopupThemed from "@/src/components/ui/DeletePopupThemed";
+import {HourlyRate} from "@/src/types/api";
 
 export default function ProfileScreen() {
 
-    const [rates, setRates] = useState<any[]>([])
+    const [rates, setRates] = useState<HourlyRate[]>([])
 
-    // Popup states
     const [isEditPopupVisible, setIsEditPopupVisible] = useState(false);
     const [isAddPopupVisible, setIsAddPopupVisible] = useState(false);
     const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false);
-    const [selectedRate, setSelectedRate] = useState<any>(null);
-
+    const [selectedRate, setSelectedRate] = useState<HourlyRate | null>(null);
 
     const {user, logout} = useUser();
 
+    if (!user) return null;
+
     useFocusEffect(
         useCallback(() => {
-
             fetchData()
         }, [])
     )
 
     const fetchData = async () => {
         try {
-            const response = await OfflineManager.apiGet("/api/users/me/settings/hourly-rates")
+            const response = await api.get<{ rates: HourlyRate[] }>("/api/users/me/settings/hourly-rates")
 
-            if (!response) {
+            if (!response.data) {
                 console.error("Failed to fetch data")
                 return
             }
 
-            console.log("[INFO] Data fetched successfully", response.rates)
-            setRates(response.rates)
-            //console.log("[INFO] User data: ", user)
+            console.log("[INFO] Data fetched successfully", response.data.rates)
+            setRates(response.data.rates)
 
         } catch (error) {
             console.error("Failed to fetch data", error)
         }
     }
 
-    const handleRatePress = (rate: any) => {
+    const handleRatePress = (rate: HourlyRate) => {
         setSelectedRate(rate);
         setIsEditPopupVisible(true);
     }
-    
-    const handleRateLongPress = (rate: any) => {
+
+    const handleRateLongPress = (rate: HourlyRate) => {
         Vibration.vibrate(100);
-        //console.log(`Long press on rate: ${rate.activity_id}`);
         setSelectedRate(rate);
         setIsDeletePopupVisible(true);
     }
 
     const handleSaveRate = async (newRateValue: string) => {
         console.log(`Saved new rate for ${selectedRate?.activity_name}: ${newRateValue}`);
-        console.log("[INFO] Selected rate: ", selectedRate)
 
         try{
             const response = await api.patch("/api/users/me/settings/hourly-rates", {
-                "activity_id": selectedRate.activity_id,
+                "activity_id": selectedRate?.activity_id,
                 "hourly_rate_gross": newRateValue,
             })
 
@@ -84,7 +80,6 @@ export default function ProfileScreen() {
                 console.log("[INFO] Rate updated successfully")
             }
 
-            // Refresh the data
             fetchData()
 
         }catch(error){
@@ -93,15 +88,14 @@ export default function ProfileScreen() {
 
         setIsEditPopupVisible(false);
     }
-    
+
     const handleAddRate = async (activityName: string, rate: string) => {
         console.log(`Adding new rate: ${activityName} - ${rate}`);
-        
+
         try{
-            const response = await OfflineManager.apiPost("/api/users/me/settings/activities",{
+            await api.post("/api/users/me/settings/activities", {
                 "activity_name": activityName,
                 "hourly_rate_gross": rate
-
             })
 
             fetchData()
@@ -109,25 +103,23 @@ export default function ProfileScreen() {
         } catch (error) {
             console.error("Failed to add rate", error)
         }
-        
+
         setIsAddPopupVisible(false);
     }
-    
+
     const handleDeleteRate = async () => {
         console.log(`Deleting rate: ${selectedRate?.activity_name}`);
-        
-        try {
 
-           const response = await api.delete(`/api/users/me/settings/activities/${selectedRate.activity_id}`)
-            
-            // Update local state temporarily for fast UI response
-            setRates(rates.filter((rate) => rate.activity_id !== selectedRate.activity_id));
-            
+        try {
+            await api.delete(`/api/users/me/settings/activities/${selectedRate?.activity_id}`)
+
+            setRates(rates.filter((rate) => rate.activity_id !== selectedRate?.activity_id));
+
             console.log("[INFO] Rate deleted successfully");
         } catch (error) {
             console.error("Failed to delete rate", error);
         }
-        
+
         setIsDeletePopupVisible(false);
     }
 
@@ -139,11 +131,9 @@ export default function ProfileScreen() {
                 {/* Header Section */}
                 <HeaderThemed/>
 
-
                 {/* Profile Section */}
                 <View className={"mt-10"}>
-                    {/*// @ts-ignore*/}
-                    <ProfileInfo fullName={user.last_name + " " + user.first_name} role={user?.role}/>
+                    <ProfileInfo fullName={user.last_name + " " + user.first_name} role={user.role}/>
                 </View>
 
                 {/* Tips & Tricks Section */}
@@ -167,7 +157,6 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Hourly Rates Section */}
-
                 <View className={"mt-10 mx-5"}>
                     <View className="flex-row justify-between items-center mb-5">
                         <Text className={"font-semibold text-lg"}>Tarife Orare</Text>
@@ -176,21 +165,17 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {rates ?
-                        rates.map((rate) => (
-                            <HourlyRateCard
-                                key={rate.activity_id}
-                                title={rate.activity_name}
-                                subtitle={""}
-                                price={rate.hourly_rate_gross.toString() + " RON"}
-                                unitLabel={"per Oră"}
-                                onPress={() => handleRatePress(rate)}
-                                onLongPress={() => handleRateLongPress(rate)}
-                            />
-                        ))
-                        : null}
-
-
+                    {rates.map((rate) => (
+                        <HourlyRateCard
+                            key={rate.activity_id}
+                            title={rate.activity_name}
+                            subtitle={""}
+                            price={rate.hourly_rate_gross.toString() + " RON"}
+                            unitLabel={"per Oră"}
+                            onPress={() => handleRatePress(rate)}
+                            onLongPress={() => handleRateLongPress(rate)}
+                        />
+                    ))}
                 </View>
 
                 {/* LogOut Section */}
@@ -210,21 +195,20 @@ export default function ProfileScreen() {
                 onSave={handleSaveRate}
                 onCancel={() => setIsEditPopupVisible(false)}
             />
-            
+
             {/* Popup for Adding */}
-            <PopupAddRate 
+            <PopupAddRate
                 visible={isAddPopupVisible}
                 onSave={handleAddRate}
                 onCancel={() => setIsAddPopupVisible(false)}
             />
-            
+
             {/* Delete Popup */}
-            <DeletePopupThemed 
+            <DeletePopupThemed
                 visible={isDeletePopupVisible}
                 onCancel={() => setIsDeletePopupVisible(false)}
                 onConfirm={handleDeleteRate}
             />
         </SafeScreenWrapper>
-
     )
 }

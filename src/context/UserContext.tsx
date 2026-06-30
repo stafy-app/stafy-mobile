@@ -3,7 +3,8 @@
 import React, {createContext, useEffect, useState} from 'react';
 import {api} from "../services/api";
 import {deleteItem, saveItem, getItem} from "@/src/services/storage";
-import {Redirect, router} from "expo-router";
+import {router} from "expo-router";
+import {User} from "@/src/types/api";
 
 
 interface RegisterData {
@@ -13,15 +14,6 @@ interface RegisterData {
     phone?: string;
     role: string;
     password: string;
-}
-
-interface User {
-    id: string;
-    email?: string;
-    password?: string;
-    first_name?: string;
-    last_name?: string;
-    role?: string;
 }
 
 interface UserContextType {
@@ -45,7 +37,6 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             setIsLoading(true);
 
-            // create the form data
             const formData = new FormData();
             formData.append('username', email);
             formData.append('password', password);
@@ -53,7 +44,6 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             console.log("Sending login request with data: " +
                 "\nEmail: " + formData.get('username'));
 
-            // send data to backend
             const response = await api.post('/auth/login', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -68,26 +58,17 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             console.log("Response from backend: ", response.data);
 
-
-            // get data from backend
             const {id, access_token: token, token_type, role} = response.data;
 
-            // save the token in local storage
             await saveItem('stafy_token', token);
 
-            // call get user profile data
             const userData = await getProfile()
 
-            // save the user data in local storage
             await saveItem('stafy_userData', JSON.stringify(userData));
 
-            // save user data in state
             setUser(userData)
 
-            // redirect to home page
-            console.log("Redirecting to home page\nToken: ", token, "\nId: ", id,
-                "\nName: ", userData.first_name ,"\nUser: ", userData);
-            //router.replace("/attendance");
+            console.log("Redirecting to home page\nId: ", id, "\nName: ", userData.first_name);
 
         } catch (error: any) {
             console.log(error.response.data.message)
@@ -102,12 +83,10 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
         try {
             setIsLoading(true);
 
-            // send data to backend
             const response = await api.post('/auth/register', {
                 'first_name': registerData.name,
                 'last_name': registerData.surname,
                 'email': registerData.email,
-                //'phone': registerData.phone, // will be implemented later
                 'role': registerData.role,
                 'password': registerData.password,
             });
@@ -124,33 +103,23 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }
 
     async function logout() {
-        // remove user data from state
         setUser(null);
         await deleteItem('stafy_userData');
         await deleteItem('stafy_token');
     }
 
 
-    async function getProfile() {
+    async function getProfile(): Promise<User> {
 
         try{
             setIsLoading(true);
 
-            const responseProfile = await api.get('/api/users/me/settings/profile')
+            const responseProfile = await api.get<{ current_user: User }>('/api/users/me/settings/profile')
 
             if (!responseProfile) {
                 console.error("No response received from the server");
                 throw new Error("No response received from the server");
             }
-
-            //console.log("Response from profile response: ", responseProfile.data.current_user);
-
-            console.log("=== FULL RESPONSE ===");
-            console.log(JSON.stringify(responseProfile.data, null, 2));
-            console.log("=== CURRENT USER ===");
-            console.log(JSON.stringify(responseProfile.data.current_user, null, 2));
-
-
 
             return responseProfile.data.current_user;
 
@@ -165,7 +134,6 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
     useEffect(() => {
 
-        // check if user is logged in
         const authCheck = async () => {
             try {
                 setIsLoading(true);

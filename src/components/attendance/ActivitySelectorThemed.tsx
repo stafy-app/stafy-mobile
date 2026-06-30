@@ -4,14 +4,8 @@ import {View, Text, TouchableOpacity} from "react-native";
 import {useEffect, useState} from "react";
 
 import {api} from "@/src/services/api";
+import {HourlyRate} from "@/src/types/api";
 
-
-
-interface Activity {
-    activity_id: number,
-    activity_name: string,
-    hourly_rate_gross: number
-}
 
 interface ActivitySelectorProps {
     onActivitySelect: (activity: string) => void;
@@ -19,43 +13,20 @@ interface ActivitySelectorProps {
 }
 
 
-/**
- * Renders a selectable list of user activities fetched from the backend.
- *
- * The component loads the available activities from the user's hourly rates settings
- * when it is mounted. Each activity is displayed as a selectable button.
- *
- * When an activity is selected, the component updates its internal selected activity
- * state and passes the selected activity name to the onActivitySelect callback.
- * It also passes the selected activity rate to the onRateSelect callback.
- *
- * @param onActivitySelect - Callback called with the selected activity name.
- * @param onRateSelect - Callback called with the selected activity hourly rate.
- * @returns A React component that renders the activity selector UI.
- */
 export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}: ActivitySelectorProps) {
 
     const [isLoading, setIsLoading] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
-    const [allActivities, setAllActivities] = useState<Activity[]>([]);
+    const [allActivities, setAllActivities] = useState<HourlyRate[]>([]);
 
     useEffect(() => {
         const fetchActivities = async () => {
             try {
                 setIsLoading(true);
 
-                // Call the backend API to get the activities
-                const response = await api.get("/api/users/me/settings/hourly-rates");
-
-                if (!response) {
-                    console.error("Failed to fetch activities");
-                    return;
-                }
-
-                //console.log("[INFO] Activities fetched successfully", response.data.rates[0]);
+                const response = await api.get<{ rates: HourlyRate[] }>("/api/users/me/settings/hourly-rates");
 
                 setAllActivities(response.data.rates);
-                //console.log("[INFO] All activities: ", allActivities);
 
             } catch (error) {
                 console.log("[ERROR] Failed to fetch activities", error);

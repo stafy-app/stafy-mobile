@@ -3,18 +3,17 @@
 import {ScrollView, View, Text} from "react-native";
 import {useState} from "react";
 
-import {WorkedTimeResult, calculateWorkedTime} from "@/src/components/attendance/utils/calculateWorkedTime";
+import {WorkedTimeResult, calculateWorkedTime} from "@/src/utils/calculateWorkedTime";
 
-import HeaderThemed from "@/src/components/HeaderThemed";
+import HeaderThemed from "@/src/components/ui/HeaderThemed";
 import CalendarThemed from "@/src/components/attendance/CalendarThemed"
 import ActivitySelectorThemed from "@/src/components/attendance/ActivitySelectorThemed";
 import TimeSelectorThemed from "@/src/components/attendance/TimeSelectorThemed";
 import CalculatorThemed from "@/src/components/attendance/CalculatorThemed";
-import PopupThemed from "@/src/components/PopupThemed";
-import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
+import PopupThemed from "@/src/components/ui/PopupThemed";
+import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import {api} from "@/src/services/api";
-import {OfflineManager} from "@/src/services/OfflineManager";
 
 
 export default function AttendanceScreen() {
@@ -25,13 +24,10 @@ export default function AttendanceScreen() {
     const [stopTime, setStopTime] = useState(new Date());
     const [showSuccess, setShowSuccess] = useState<boolean>(false)
 
-    // Calculate the worked time
     const workedTime: WorkedTimeResult = calculateWorkedTime(startTime, stopTime)
 
     const handleDateSelection = (date: Date) => {
         console.log("Date selected:", date.toISOString());
-
-        // Handle logic
         setStartTime(date)
         setStopTime(date)
     }
@@ -44,7 +40,7 @@ export default function AttendanceScreen() {
         }
 
         try {
-            const response = await OfflineManager.apiPost("/dashboard/employee/time-entry", {
+            const response = await api.post("/dashboard/employee/time-entry", {
                 "time_start": startTime.toISOString(),
                 "time_end": stopTime.toISOString(),
                 "activity": activityName
@@ -109,7 +105,6 @@ export default function AttendanceScreen() {
 
                 </View>
 
-                {/*<Text>Attendance Screen</Text>*/}
             </ScrollView>
         </SafeScreenWrapper>
     )

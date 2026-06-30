@@ -4,7 +4,7 @@
 import {View, Text} from "react-native";
 import {useState, useEffect} from "react";
 
-import ButtonThemed from "@/src/components/ButtonThemed";
+import ButtonThemed from "@/src/components/ui/ButtonThemed";
 
 
 interface CalculatorThemedProps {

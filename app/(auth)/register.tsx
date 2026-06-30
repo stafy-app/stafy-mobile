@@ -6,12 +6,12 @@ import {Link, router} from "expo-router";
 
 import {Lock, UserRound, Phone, Briefcase} from "lucide-react-native";
 
-import StafyLogoBlock from "../../src/components/StafyLogoBlock";
-import TextInputThemed from "../../src/components/TextInputThemed";
-import ButtonThemed from "../../src/components/ButtonThemed";
-import DropdownThemed from "../../src/components/DropdownThemed";
-import PopupThemed from "../../src/components/PopupThemed";
-import SafeScreenWrapper from "../../src/components/SafeScreenWrapper";
+import StafyLogoBlock from "@/src/components/ui/StafyLogoBlock";
+import TextInputThemed from "@/src/components/ui/TextInputThemed";
+import ButtonThemed from "@/src/components/ui/ButtonThemed";
+import DropdownThemed from "@/src/components/ui/DropdownThemed";
+import PopupThemed from "@/src/components/ui/PopupThemed";
+import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
@@ -38,14 +38,11 @@ export default function RegisterScreen() {
 
 
     const handleRegister = async () => {
-        //console.log("Login");
-        // console.log(email);
 
         try {
 
             setIsLoading(true);
 
-            // create data
             const registerData = {
                 name: name,
                 surname: surname,
@@ -55,7 +52,6 @@ export default function RegisterScreen() {
                 password: password,
             }
 
-            // call the register function
             if (await register(registerData)) {
                 setRegisterOk(true);
             }

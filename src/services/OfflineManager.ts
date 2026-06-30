@@ -101,7 +101,7 @@ export const OfflineManager = {
         }
     },
 
-    // TODO: Implement the delete method, next update
+    // TODO: Implement the delete, patch, method, next update
 
     async apiSync() {
 
@@ -171,7 +171,7 @@ export const OfflineManager = {
         await AsyncStorage.removeItem(GLOBAL_QUEUE_KEY);
         console.log("Queue removed successfully! All data synced!");
         
-        // Deblocăm mecanismul
+        // Unblocking the sync
         isSyncing = false;
 
     }

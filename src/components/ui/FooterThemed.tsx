@@ -1,4 +1,4 @@
-// src/components/FooterThemed.tsx
+// src/components/ui/FooterThemed.tsx
 
 import React from 'react';
 import { View, Text } from 'react-native';
