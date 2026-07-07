@@ -18,7 +18,7 @@ import {api} from "@/src/services/api";
 
 export default function AttendanceScreen() {
 
-    const [activityName, setActivityName] = useState<string>("");
+    const [activityId, setActivityId] = useState<number | null>(null);
     const [rate, setRate] = useState<number>(0)
     const [startTime, setStartTime] = useState(new Date());
     const [stopTime, setStopTime] = useState(new Date());
@@ -34,21 +34,21 @@ export default function AttendanceScreen() {
 
     const handleSaveToDb = async () => {
 
-        if(!activityName) {
+        if(!activityId) {
             alert("Te rog selectează o activitate!");
             return;
         }
 
         try {
-            const response = await api.post("/dashboard/employee/time-entry", {
+            const response = await api.post("/api/v1/time-entries/", {
                 "time_start": startTime.toISOString(),
                 "time_end": stopTime.toISOString(),
-                "activity": activityName
+                "activity_id": activityId
             })
 
             if (response) {
                 setShowSuccess(true)
-                setActivityName("")
+                setActivityId(null)
                 setRate(0)
             }
         } catch (error) {
@@ -77,7 +77,7 @@ export default function AttendanceScreen() {
                 {/* Activity Selector Section */}
                 <View className={"my-5 px-3"}>
                     <ActivitySelectorThemed onActivitySelect={
-                        (activityName) => setActivityName(activityName)}
+                        (activityId) => setActivityId(activityId)}
                                             onRateSelect={(rate) => setRate(rate)}/>
                 </View>
 

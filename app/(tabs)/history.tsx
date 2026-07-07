@@ -20,9 +20,9 @@ export default function HistoryScreen() {
 
     const handleDeleteEntry = async (entryId: number) => {
         try{
-            const response = await api.delete(`/dashboard/employee/time-entry/${entryId}`)
+            const response = await api.delete(`/api/v1/time-entries/${entryId}`)
 
-            if (response.data.message){
+            if (response.status === 204){
                 console.log("[INFO] Entry deleted successfully")
                 setTimeEntries(timeEntries.filter((entry) => entry.id !== entryId))
             }
@@ -36,7 +36,7 @@ export default function HistoryScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await api.get<DashboardData>("/dashboard/employee")
+                    const response = await api.get<DashboardData>("/api/v1/dashboard/employee")
 
                     console.log("[INFO] Data fetched successfully", response.data.time_entries)
                     setTimeEntries(response.data.time_entries)

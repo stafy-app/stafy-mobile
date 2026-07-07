@@ -1,52 +1,65 @@
 // app/_layout.tsx
 
 import "../global.css";
-import {router, Stack} from "expo-router";
+import {Stack} from "expo-router";
 import UserProvider from "@/src/context/UserContext";
 import {Uniwind} from "uniwind";
 import {SafeAreaProvider} from "react-native-safe-area-context";
-import {useEffect} from "react";
-import {deleteItem, getItem} from "@/src/services/storage";
-import {jwtDecode} from "jwt-decode";
+// Deprecated — cold-start check used to decode a locally cached backend JWT.
+// import {deleteItem, getItem} from "@/src/services/storage";
+// import {jwtDecode} from "jwt-decode";
 import {StatusBar} from "expo-status-bar";
 
 
 export default function RootLayout() {
     Uniwind.setTheme('light');
 
-    useEffect(() => {
+    // Deprecated — this used to decode a locally cached backend JWT and check
+    // its `exp` claim manually. Firebase tracks and persists its own session;
+    // onAuthStateChanged below fires once on mount with the restored session
+    // (or null) after checking the persisted refresh token, no manual expiry
+    // math needed.
+    // useEffect(() => {
+    //
+    //     const checkAuth = async () => {
+    //         const token = await getItem("stafy_token")
+    //
+    //         if (token) {
+    //
+    //             try {
+    //                 const decodedToken = jwtDecode(token)
+    //                 const currentTime = Date.now() / 1000;
+    //
+    //                 if (decodedToken.exp && decodedToken.exp < currentTime) {
+    //                     console.log("Token has expired");
+    //
+    //                     await deleteItem("stafy_token")
+    //
+    //                     router.replace("/login")
+    //                     return;
+    //                 }
+    //
+    //                 router.replace("/dashboard")
+    //             } catch (error) {
+    //                 console.error("Error decoding token:", error);
+    //                 router.replace("/login")
+    //             }
+    //         } else {
+    //             router.replace("/login")
+    //         }
+    //     };
+    //
+    //     checkAuth();
+    //
+    // }, [])
 
-        const checkAuth = async () => {
-            const token = await getItem("stafy_token")
-
-            if (token) {
-
-                try {
-                    const decodedToken = jwtDecode(token)
-                    const currentTime = Date.now() / 1000;
-
-                    if (decodedToken.exp && decodedToken.exp < currentTime) {
-                        console.log("Token has expired");
-
-                        await deleteItem("stafy_token")
-
-                        router.replace("/login")
-                        return;
-                    }
-
-                    router.replace("/dashboard")
-                } catch (error) {
-                    console.error("Error decoding token:", error);
-                    router.replace("/login")
-                }
-            } else {
-                router.replace("/login")
-            }
-        };
-
-        checkAuth();
-
-    }, [])
+    // Removed 2026-07-02 — this was a second, unguarded onAuthStateChanged
+    // listener racing UserContext's own (isAuthenticating-guarded) one: it fired
+    // router.replace("/dashboard") as soon as Firebase's sign-in resolved
+    // internally, before login()/register() finished talking to the backend,
+    // landing the user on a screen with a still-null UserContext.user. Cold-start
+    // and out-of-band sign-out redirects now live solely in UserContext.tsx's
+    // onAuthStateChanged effect.
 
     return (
         <>

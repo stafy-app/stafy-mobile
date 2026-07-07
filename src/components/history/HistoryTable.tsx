@@ -56,6 +56,11 @@ export default function HistoryTable({timeEntries, onDelete}: HistoryTableProps)
                     // activity_total is in RON, NOT minutes — do not divide by 60
                     const durationInHours = Number(item.activity_hours.toFixed(2));
 
+                    // Backend now sends a raw ISO datetime — formatting is client presentation logic.
+                    const formattedDate = new Intl.DateTimeFormat('ro-RO', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                    }).format(new Date(item.activity_date));
+
                     return (
                         <TouchableOpacity
                             key={item.id}
@@ -71,7 +76,7 @@ export default function HistoryTable({timeEntries, onDelete}: HistoryTableProps)
 
                             {/* Date Column */}
                             <View className="flex-1 justify-center">
-                                <Text className="text-sm font-medium text-secondary-500">{item.activity_date}</Text>
+                                <Text className="text-sm font-medium text-secondary-500">{formattedDate}</Text>
                             </View>
 
                             {/* Duration Column */}

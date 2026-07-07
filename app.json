@@ -23,7 +23,8 @@
         "monochromeImage": "./src/assets/Logo_Stafy.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.stafymobile"
+      "package": "com.stafy.mobile",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./src/assets/Logo_Stafy.png"

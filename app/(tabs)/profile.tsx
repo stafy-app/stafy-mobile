@@ -41,15 +41,15 @@ export default function ProfileScreen() {
 
     const fetchData = async () => {
         try {
-            const response = await api.get<{ rates: HourlyRate[] }>("/api/users/me/settings/hourly-rates")
+            const response = await api.get<{ data: HourlyRate[] }>("/api/v1/users/me/settings/hourly-rates")
 
             if (!response.data) {
                 console.error("Failed to fetch data")
                 return
             }
 
-            console.log("[INFO] Data fetched successfully", response.data.rates)
-            setRates(response.data.rates)
+            console.log("[INFO] Data fetched successfully", response.data.data)
+            setRates(response.data.data)
 
         } catch (error) {
             console.error("Failed to fetch data", error)
@@ -71,7 +71,7 @@ export default function ProfileScreen() {
         console.log(`Saved new rate for ${selectedRate?.activity_name}: ${newRateValue}`);
 
         try{
-            const response = await api.patch("/api/users/me/settings/hourly-rates", {
+            const response = await api.patch("/api/v1/users/me/settings/hourly-rates", {
                 "activity_id": selectedRate?.activity_id,
                 "hourly_rate_gross": newRateValue,
             })
@@ -93,7 +93,7 @@ export default function ProfileScreen() {
         console.log(`Adding new rate: ${activityName} - ${rate}`);
 
         try{
-            await api.post("/api/users/me/settings/activities", {
+            await api.post("/api/v1/users/me/settings/activities", {
                 "activity_name": activityName,
                 "hourly_rate_gross": rate
             })
@@ -111,7 +111,7 @@ export default function ProfileScreen() {
         console.log(`Deleting rate: ${selectedRate?.activity_name}`);
 
         try {
-            await api.delete(`/api/users/me/settings/activities/${selectedRate?.activity_id}`)
+            await api.delete(`/api/v1/users/me/settings/activities/${selectedRate?.activity_id}`)
 
             setRates(rates.filter((rate) => rate.activity_id !== selectedRate?.activity_id));
 

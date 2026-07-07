@@ -8,7 +8,7 @@ import {HourlyRate} from "@/src/types/api";
 
 
 interface ActivitySelectorProps {
-    onActivitySelect: (activity: string) => void;
+    onActivitySelect: (activityId: number) => void;
     onRateSelect?: (rate: number) => void;
 }
 
@@ -16,7 +16,7 @@ interface ActivitySelectorProps {
 export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}: ActivitySelectorProps) {
 
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+    const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
     const [allActivities, setAllActivities] = useState<HourlyRate[]>([]);
 
     useEffect(() => {
@@ -24,9 +24,9 @@ export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}:
             try {
                 setIsLoading(true);
 
-                const response = await api.get<{ rates: HourlyRate[] }>("/api/users/me/settings/hourly-rates");
+                const response = await api.get<{ data: HourlyRate[] }>("/api/v1/users/me/settings/hourly-rates");
 
-                setAllActivities(response.data.rates);
+                setAllActivities(response.data.data);
 
             } catch (error) {
                 console.log("[ERROR] Failed to fetch activities", error);
@@ -50,17 +50,17 @@ export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}:
                             <TouchableOpacity
                                 key={activity.activity_id}
                                 onPress={() => {
-                                    setSelectedActivity(activity.activity_name)
-                                    onActivitySelect(activity.activity_name)
+                                    setSelectedActivityId(activity.activity_id)
+                                    onActivitySelect(activity.activity_id)
                                     if (onRateSelect) {
-                                        onRateSelect(activity.hourly_rate_gross)
+                                        onRateSelect(Number(activity.hourly_rate_gross))
                                     }
                                 }}
                                 className={`rounded-xl px-5 py-3 border border-secondary-200
-                            ${selectedActivity === activity.activity_name ? 'bg-primary-500' : 'bg-white border-secondary-200'}`}
+                            ${selectedActivityId === activity.activity_id ? 'bg-primary-500' : 'bg-white border-secondary-200'}`}
                             >
                                 <Text
-                                    className={`${selectedActivity === activity.activity_name ? 'text-white' : 'text-secondary-500'}`}
+                                    className={`${selectedActivityId === activity.activity_id ? 'text-white' : 'text-secondary-500'}`}
                                 >{activity.activity_name}</Text>
                             </TouchableOpacity>
                         )

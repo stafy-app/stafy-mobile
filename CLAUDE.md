@@ -61,11 +61,12 @@ No automated test suite exists. Manual smoke-test the changed screen on both nat
 
 | Module | Status | Description |
 |---|---|---|
-| `app/(auth)/login.tsx` | Live | Email + password login via `/auth/login` (multipart/form-data) |
-| `app/(auth)/register.tsx` | Live | Registration via `/auth/register` (JSON); role selector: `employee` / `manager` |
-| `app/(tabs)/attendance.tsx` | Live | Time-entry creation; offline-aware via `OfflineManager.apiPost` |
-| `app/(tabs)/dashboard.tsx` | Live | Monthly hours + gross salary summary + pie chart; offline-aware via `OfflineManager.apiGet` |
-| `app/(tabs)/history.tsx` | Live — has debt | Time-entry list; delete is online-only (`api.delete`); fetches via `OfflineManager.apiGet` |
+| `app/(auth)/login.tsx` | Live | Email + password login via Firebase (`signInWithEmailAndPassword`), then `POST /api/v1/auth/login` with the ID token |
+| `app/(auth)/register.tsx` | Live | Registration via Firebase (`createUserWithEmailAndPassword`), then `POST /api/v1/auth/register` with the ID token; role selector: `employee` / `manager` |
+| `src/services/firebase.ts` | Live | Firebase app + `auth` singleton init; native uses `getReactNativePersistence(AsyncStorage)`, web uses default `getAuth` |
+| `app/(tabs)/attendance.tsx` | Live — has debt | Time-entry creation; **not** offline-aware — uses bare `api.post`, not `OfflineManager.apiPost` |
+| `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart; **not** offline-aware — uses bare `api.get`, not `OfflineManager.apiGet` |
+| `app/(tabs)/history.tsx` | Live — has debt | Time-entry list; both fetch and delete are online-only (bare `api.get` / `api.delete`), not `OfflineManager` |
 | `app/(tabs)/profile.tsx` | Live — has debt | Hourly rates CRUD; edit (`api.patch`) and delete (`api.delete`) are online-only; null-guard missing on `user` |
 | `src/services/OfflineManager.ts` | Live — incomplete | GET (cache) + POST (queue + sync) implemented; PATCH, DELETE, PUT not yet implemented (TODO) |
 | `src/context/UserContext.tsx` | Live | Auth state, login/register/logout, profile fetch; `user` is null before hydration |
@@ -101,12 +102,14 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 - **Styling**: Tailwind utility classes via `Uniwind` (not Nativewind). Theme is set once at `app/_layout.tsx:19`: `Uniwind.setTheme('light')`. Custom tokens: `primary-*` (brand blue), `secondary-*` (grays). Do not use raw hex colors in `className` — use the token names.
 - **Screen wrapper**: Every tab screen uses `<SafeScreenWrapper>` + `<ScrollView>`. Do not add raw `<View>` roots on new screens.
 - **Focus refresh**: Screens that show live data use `useFocusEffect` + `useCallback` to re-fetch when the tab is navigated to. Always use this pattern — not `useEffect` with no deps — so stale data doesn't linger.
-- **Data access**: All data fetching goes through `OfflineManager.apiGet` / `OfflineManager.apiPost`. Only use `api.*` directly when the operation is inherently online-only (login, profile bootstrap) or when the `OfflineManager` does not yet support the HTTP verb needed.
-- **Auth token**: Stored under key `stafy_token` in `SecureStore` (native) or `localStorage` (web). Read/written only through `src/services/storage.ts` helpers — never call `SecureStore` or `localStorage` directly.
-- **User data cache**: Stored under key `stafy_userData` (JSON string) in `SecureStore`/`localStorage`. Populated after login via `getProfile()`; used to hydrate `UserContext` on cold start.
+- **Data access convention**: data fetching should go through `OfflineManager.apiGet` / `OfflineManager.apiPost`, falling back to `api.*` only when the operation is inherently online-only (e.g. login) or the verb isn't supported by `OfflineManager` (PATCH/DELETE — see Traps). `attendance.tsx`, `dashboard.tsx`, and `history.tsx` call `api.*` directly — see Module Status. Do not copy this pattern into new screens.
+- **All backend routes live under `/api/v1`, including `/auth/*`.** Every path used in the app must start with `/api/v1/...` — this includes login/register, not just the `/api/v1`-prefixed data routes. See `docs/modules/auth.md`.
+- **Auth token**: Not stored locally at all — `auth.currentUser.getIdToken()` (Firebase SDK) is called per-request in `api.ts`'s interceptor. Firebase persists its own refresh token via `getReactNativePersistence(AsyncStorage)` (native) / browser storage (web); there is no separate `stafy_token` key anymore.
+- **User data cache**: Stored under key `stafy_userData` (JSON string) in `SecureStore`/`localStorage`. Populated after login via `getProfile()`; used to hydrate `UserContext` on cold start alongside Firebase's own `onAuthStateChanged`.
 - **Offline queue key**: `@global_offline_queue` in `AsyncStorage`. Written by `OfflineManager.apiPost` when offline; drained by `OfflineManager.apiSync()` on reconnect. Reconnect sync is debounced 2 s in `_layout.tsx` to wait for connection stability.
-- **Login form encoding**: `/auth/login` requires `multipart/form-data` (`username` + `password` fields) — the backend uses FastAPI's OAuth2PasswordRequestForm. All other endpoints use JSON.
-- **Token expiry**: Checked on cold start in `_layout.tsx` via `jwtDecode`. Expired token → `deleteItem('stafy_token')` → redirect to `/login`. No background refresh — user must re-login.
+- **Login/register are Firebase-first**: `login`/`register` in `UserContext.tsx` call the Firebase SDK directly (`signInWithEmailAndPassword` / `createUserWithEmailAndPassword`), then send the resulting ID token to the backend. `/api/v1/auth/register`'s JSON body is `{first_name, last_name, role}` only — email/password never reach the backend. See `stafy-mobile/docs/modules/auth.md`.
+- **`onAuthStateChanged` is guarded by `isAuthenticating` (a ref) in `UserContext.tsx`.** Firebase fires this listener as soon as `createUserWithEmailAndPassword`/`signInWithEmailAndPassword` resolve internally — before `login()`/`register()` finish talking to the backend. Without the guard, the listener races ahead and calls `getProfile()` against a backend row that doesn't exist yet. `login()`/`register()` set the ref for their duration; the listener only handles cold-start hydration and out-of-band sign-outs.
+- **Token expiry**: No longer tracked manually. `onAuthStateChanged` (Firebase SDK) drives both the cold-start redirect in `_layout.tsx` and `UserContext`'s hydration; the SDK silently refreshes the ID token before expiry.
 - **Routing**: Expo Router file-based. Auth screens live in `app/(auth)/`; tab screens in `app/(tabs)/`. Cold start → `app/index.tsx` → immediately replaced by `_layout.tsx`'s `checkAuth` effect.
 - **Icons**: `lucide-react-native` exclusively. Do not mix icon libraries.
 
@@ -114,7 +117,6 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 | Key | Storage | Contents |
 |---|---|---|
-| `stafy_token` | SecureStore / localStorage | Firebase JWT (access token) |
 | `stafy_userData` | SecureStore / localStorage | Serialized `User` JSON |
 | `@cache_{endpoint}` | AsyncStorage | `OfflineManager` GET cache, keyed by endpoint path |
 | `@global_offline_queue` | AsyncStorage | Array of `{ endpoint, method, data, saveHour }` pending POST items |
@@ -123,18 +125,20 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 | Screen / Service | Method | Path | Offline |
 |---|---|---|---|
-| `UserContext` login | POST | `/auth/login` | No — auth only |
-| `UserContext` register | POST | `/auth/register` | No — auth only |
-| `UserContext` getProfile | GET | `/api/users/me/settings/profile` | No — bootstrap only |
-| `ActivitySelectorThemed` | GET | `/api/users/me/settings/hourly-rates` | No ⚠ debt |
-| `dashboard.tsx` | GET | `/dashboard/employee` | Yes (cache) |
-| `history.tsx` | GET | `/dashboard/employee` | Yes (cache) |
-| `history.tsx` delete | DELETE | `/dashboard/employee/time-entry/{id}` | No ⚠ debt |
-| `attendance.tsx` submit | POST | `/dashboard/employee/time-entry` | Yes (queue) |
-| `profile.tsx` rates | GET | `/api/users/me/settings/hourly-rates` | Yes (cache) |
-| `profile.tsx` edit rate | PATCH | `/api/users/me/settings/hourly-rates` | No ⚠ debt |
-| `profile.tsx` add activity | POST | `/api/users/me/settings/activities` | Yes (queue) |
-| `profile.tsx` delete activity | DELETE | `/api/users/me/settings/activities/{id}` | No ⚠ debt |
+| `UserContext` login | POST | `/api/v1/auth/login` | No — auth only |
+| `UserContext` register | POST | `/api/v1/auth/register` | No — auth only |
+| `UserContext` getProfile | GET | `/api/v1/profile` | No — bootstrap only |
+| `ActivitySelectorThemed` | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
+| `dashboard.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
+| `history.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
+| `history.tsx` delete | DELETE | `/api/v1/time-entries/{id}` | No ⚠ debt |
+| `attendance.tsx` submit | POST | `/api/v1/time-entries/` | No ⚠ debt |
+| `profile.tsx` rates | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
+| `profile.tsx` edit rate | PATCH | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
+| `profile.tsx` add activity | POST | `/api/v1/users/me/settings/activities` | No ⚠ debt |
+| `profile.tsx` delete activity | DELETE | `/api/v1/users/me/settings/activities/{id}` | No ⚠ debt |
+
+`time_entries` lives under top-level `/api/v1/time-entries`. The profile endpoint (`/api/v1/profile`) is flat, with no `{current_user: ...}` envelope. List responses use a `{data: [...]}` envelope. `hourly_rate_gross`, `rate_hour`, and `total_gross_salary` are JSON strings (`Decimal`, not `number`) — see `src/types/api.ts`.
 
 ## Traps
 
@@ -150,12 +154,23 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 ❌ **No TypeScript `strict` null-checking on context.** `useUser()` throws if called outside `UserProvider`, but components inside the provider still see `user: User | null`. TypeScript will not catch `user.first_name` accesses — you must add the null guard manually.
 
+❌ **`stafy_token` no longer exists.** Auth moved to the Firebase SDK (`src/services/firebase.ts`) — the ID token is fetched per-request via `auth.currentUser.getIdToken()` in `api.ts`'s interceptor, never cached in storage. Old code paths reading/writing `stafy_token` are commented out (marked deprecated) in `UserContext.tsx`, `api.ts`, `app/_layout.tsx` — don't resurrect them. See `docs/modules/auth.md`.
+
+❌ **`getReactNativePersistence` is missing from `firebase/auth`'s public TypeScript types** (known firebase-js-sdk gap — the runtime export exists, the aggregated `.d.ts` doesn't declare it). `src/services/firebase.ts` imports it behind a documented `@ts-expect-error`; do not "fix" this by removing the suppression.
+
+❌ **Registration is two sequential calls** (`createUserWithEmailAndPassword` then `POST /api/v1/auth/register`). If the backend call fails after the Firebase account was created, the Firebase user is deliberately left in place (no rollback) — see `docs/modules/auth.md` "Special Aspects → Orphan registration" for the known case and its limits (no auto-recovery UI yet; login will surface a distinct "registration not finished" error instead of a wrong-password error).
+
+❌ **Every endpoint path must start with `/api/v1/`, including `/auth/*`.** All routers, including `auth_router`, are mounted with `app.include_router(..., prefix="/api/v1")` in `stafy-backend/app/main.py`. Before adding a new endpoint call, verify the full path against `stafy-backend/app/main.py`'s `include_router` calls.
+
+❌ **`onAuthStateChanged` in `UserContext.tsx` is guarded by an `isAuthenticating` ref.** Firebase notifies auth-state listeners as soon as `createUserWithEmailAndPassword`/`signInWithEmailAndPassword` resolve internally, which races ahead of `login()`/`register()`'s own backend calls. Without the guard, the listener calls `getProfile()` against a backend row that doesn't exist yet (or isn't synced yet) and clobbers `user` state with `null`. If you add new sign-in paths, set/clear this ref around them.
+
 ## Where to Look
 
 | Task | Start here |
 |---|---|
-| Auth flow, token storage, login/register | `src/context/UserContext.tsx` |
-| Token attach to requests | `src/services/api.ts` — request interceptor |
+| Auth flow, login/register | `src/context/UserContext.tsx`; module doc: [`docs/modules/auth.md`](docs/modules/auth.md) |
+| Firebase app/auth init | `src/services/firebase.ts` |
+| Token attach to requests | `src/services/api.ts` — request interceptor, calls `auth.currentUser.getIdToken()` |
 | Offline read (GET + cache) | `src/services/OfflineManager.ts` → `apiGet` |
 | Offline write (POST + queue + sync) | `src/services/OfflineManager.ts` → `apiPost` / `apiSync` |
 | Storage helpers (SecureStore / localStorage) | `src/services/storage.ts` |

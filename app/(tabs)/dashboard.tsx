@@ -18,7 +18,7 @@ import {DashboardData, TimeEntry} from "@/src/types/api";
 export default function DashboardScreen() {
 
     const [totalHours, setTotalHours] = useState<number>(0)
-    const [totalMoney, setTotalMoney] = useState<number>(0)
+    const [totalMoney, setTotalMoney] = useState<string>("0")
     const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
 
     useFocusEffect(
@@ -26,7 +26,7 @@ export default function DashboardScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await api.get<DashboardData>("/dashboard/employee")
+                    const response = await api.get<DashboardData>("/api/v1/dashboard/employee")
 
                     console.log("[INFO] Data fetched successfully", response.data)
 

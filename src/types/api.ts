@@ -1,7 +1,7 @@
 // src/types/api.ts
 
 export interface User {
-    id: string;
+    id: number;
     email?: string;
     first_name?: string;
     last_name?: string;
@@ -11,9 +11,11 @@ export interface User {
 export interface TimeEntry {
     id: number;
     activity_name: string;
+    // Raw ISO 8601 datetime — format for display on the client (see HistoryTable.tsx).
     activity_date: string;
     activity_hours: number;
-    rate_hour: number;
+    // Serialized as a JSON string by the backend (Decimal), not a number.
+    rate_hour: string;
     time_start: string;
     time_end: string;
 }
@@ -21,11 +23,13 @@ export interface TimeEntry {
 export interface HourlyRate {
     activity_id: number;
     activity_name: string;
-    hourly_rate_gross: number;
+    // Serialized as a JSON string by the backend (Decimal), not a number.
+    hourly_rate_gross: string;
 }
 
 export interface DashboardData {
     total_hours: number;
-    total_gross_salary: number;
+    // Serialized as a JSON string by the backend (Decimal), not a number.
+    total_gross_salary: string;
     time_entries: TimeEntry[];
 }
