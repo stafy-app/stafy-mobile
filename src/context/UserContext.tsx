@@ -9,6 +9,7 @@ import {auth} from "@/src/services/firebase";
 import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
+    sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut,
 } from "firebase/auth";
@@ -52,6 +53,7 @@ interface UserContextType {
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
     register: (registerData: RegisterData) => Promise<boolean>;
+    resetPassword: (email: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -234,6 +236,18 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }
 
 
+    async function resetPassword(email: string) {
+        try{
+            setIsLoading(true);
+            await sendPasswordResetEmail(auth, email);
+        }catch(error: any){
+            throw new Error(mapAuthError(error));
+        }finally {
+            setIsLoading(false);
+        }
+    }
+
+
     async function getProfile(): Promise<User> {
 
         try{
@@ -344,7 +358,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }, [])
 
     return (
-        <UserContext.Provider value={{user, isLoading, login, register, logout}}>
+        <UserContext.Provider value={{user, isLoading, login, register, resetPassword, logout}}>
             {children}
         </UserContext.Provider>
     )

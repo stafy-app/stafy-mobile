@@ -1,7 +1,8 @@
 // src/components/attendance/ActivitySelectorThemed.tsx
 
 import {View, Text, TouchableOpacity} from "react-native";
-import {useEffect, useState} from "react";
+import {useCallback, useState} from "react";
+import {useFocusEffect} from "expo-router";
 
 import {api} from "@/src/services/api";
 import {HourlyRate} from "@/src/types/api";
@@ -19,24 +20,26 @@ export default function ActivitySelectorThemed({onActivitySelect, onRateSelect}:
     const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
     const [allActivities, setAllActivities] = useState<HourlyRate[]>([]);
 
-    useEffect(() => {
-        const fetchActivities = async () => {
-            try {
-                setIsLoading(true);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchActivities = async () => {
+                try {
+                    setIsLoading(true);
 
-                const response = await api.get<{ data: HourlyRate[] }>("/api/v1/users/me/settings/hourly-rates");
+                    const response = await api.get<{ data: HourlyRate[] }>("/api/v1/users/me/settings/hourly-rates");
 
-                setAllActivities(response.data.data);
+                    setAllActivities(response.data.data);
 
-            } catch (error) {
-                console.log("[ERROR] Failed to fetch activities", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+                } catch (error) {
+                    console.log("[ERROR] Failed to fetch activities", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
 
-        fetchActivities();
-    }, [])
+            fetchActivities();
+        }, [])
+    )
 
 
     return (

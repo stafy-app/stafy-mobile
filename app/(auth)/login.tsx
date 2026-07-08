@@ -52,6 +52,8 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}/>
 
+        <Link href={"/forgot-password"} className={"text-primary-500 text-sm self-end mb-6"}>Ai uitat parola?</Link>
+
         <ButtonThemed onPress={handleLogin} isLoading={isLoading} title={"Intra in cont"} className={"mt-10"}/>
 
         <View className={"flex-row items-center justify-center mt-10"}>
