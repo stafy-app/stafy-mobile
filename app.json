@@ -3,7 +3,7 @@
     "scheme": "stafyapp",
     "name": "stafy-mobile",
     "slug": "stafy-mobile",
-    "version": "1.0.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./src/assets/Logo_Stafy.png",
     "userInterfaceStyle": "light",
