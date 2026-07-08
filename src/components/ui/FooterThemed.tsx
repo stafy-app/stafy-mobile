@@ -1,4 +1,4 @@
-// src/components/FooterThemed.tsx
+// src/components/ui/FooterThemed.tsx
 
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -7,7 +7,7 @@ interface FooterThemedProps {
     version?: string;
 }
 
-export default function FooterThemed({ version = "v0.1.0-alpha" }: FooterThemedProps) {
+export default function FooterThemed({ version = "v0.2.0" }: FooterThemedProps) {
     return (
         <View className="py-6 items-center justify-center w-full">
             <Text className="text-xs font-medium text-secondary-400 tracking-wider">

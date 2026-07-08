@@ -1,9 +1,9 @@
-// src/components/StafyLogoBlock.tsx
+// src/components/ui/StafyLogoBlock.tsx
 
 import React from 'react';
 import {View, Text} from "react-native";
 
-import Stafy_Logo  from "../../src/assets/stafy_logo.svg"
+import Stafy_Logo from "@/src/assets/stafy_logo.svg"
 
 type StafyLogoBlockProps = {
     width?: number;
@@ -11,7 +11,7 @@ type StafyLogoBlockProps = {
 };
 
 export default function StafyLogoBlock(
-    {width=102, height=102}
+    {width=102, height=102}: StafyLogoBlockProps
 ) {
 
     return (

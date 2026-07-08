@@ -1,4 +1,4 @@
-// src/components/TextInputThemed.tsx
+// src/components/ui/TextInputThemed.tsx
 
 import {View, TextInput, Text, KeyboardTypeOptions} from 'react-native';
 import {Mail} from 'lucide-react-native';

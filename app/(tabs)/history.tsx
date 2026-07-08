@@ -1,32 +1,30 @@
 // app/(tabs)/history.tsx
 
-
 import {View, Text, ScrollView} from "react-native";
 
 import {api} from "@/src/services/api";
 
-import SafeScreenWrapper from "@/src/components/SafeScreenWrapper";
-import HeaderThemed from "@/src/components/HeaderThemed";
+import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
+import HeaderThemed from "@/src/components/ui/HeaderThemed";
 import HistoryTable from "@/src/components/history/HistoryTable";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useState} from "react";
 import useUser from "@/src/hooks/useUser";
 import {useFocusEffect} from "expo-router";
-import {OfflineManager} from "@/src/services/OfflineManager";
+import {DashboardData, TimeEntry} from "@/src/types/api";
 
 export default function HistoryScreen() {
 
-    const [timeEntries, setTimeEntries] = useState<any[]>([]);
+    const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
 
     const {logout} = useUser();
 
     const handleDeleteEntry = async (entryId: number) => {
         try{
-            const response = await api.delete(`/dashboard/employee/time-entry/${entryId}`)
+            const response = await api.delete(`/api/v1/time-entries/${entryId}`)
 
-            if (response.data.message){
+            if (response.status === 204){
                 console.log("[INFO] Entry deleted successfully")
-                // Remove the entry from the state
-                setTimeEntries(timeEntries.filter((entry: any) => entry.id !== entryId))
+                setTimeEntries(timeEntries.filter((entry) => entry.id !== entryId))
             }
         }catch (error){
             console.error("Failed to delete entry", error)
@@ -38,15 +36,10 @@ export default function HistoryScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await OfflineManager.apiGet("/dashboard/employee")
+                    const response = await api.get<DashboardData>("/api/v1/dashboard/employee")
 
-                    if (!response){
-                        console.error("Failed to fetch data")
-                        return
-                    }
-
-                    console.log("[INFO] Data fetched successfully", response.time_entries)
-                    setTimeEntries(response.time_entries)
+                    console.log("[INFO] Data fetched successfully", response.data.time_entries)
+                    setTimeEntries(response.data.time_entries)
                 }catch (error){
                     console.error("Failed to fetch data", error)
                 }

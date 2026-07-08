@@ -3,7 +3,7 @@
 import {Tabs} from "expo-router";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {Uniwind} from "uniwind";
-import UserOnly from "@/src/components/auth/UserOnly";
+import UserOnly from "@/src/components/ui/UserOnly";
 
 import {Clock, LayoutDashboard, History, User} from "lucide-react-native";
 

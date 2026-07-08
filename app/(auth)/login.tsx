@@ -6,9 +6,9 @@ import {SafeAreaView} from "react-native-safe-area-context";
 
 import {Lock} from "lucide-react-native";
 
-import StafyLogoBlock from "../../src/components/StafyLogoBlock";
-import TextInputThemed from "../../src/components/TextInputThemed";
-import ButtonThemed from "../../src/components/ButtonThemed";
+import StafyLogoBlock from "@/src/components/ui/StafyLogoBlock";
+import TextInputThemed from "@/src/components/ui/TextInputThemed";
+import ButtonThemed from "@/src/components/ui/ButtonThemed";
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
 
@@ -22,7 +22,6 @@ export default function LoginScreen() {
     const {login} = useUser();
 
     const handleLogin = async () =>{
-        // Set loading state to true before starting the login process
         setIsLoading(true);
 
         try{
@@ -52,6 +51,8 @@ export default function LoginScreen() {
         <TextInputThemed isPassword={true} placeholder={"Password"} Icon={Lock}
         value={password}
         onChangeText={setPassword}/>
+
+        <Link href={"/forgot-password"} className={"text-primary-500 text-sm self-end mb-6"}>Ai uitat parola?</Link>
 
         <ButtonThemed onPress={handleLogin} isLoading={isLoading} title={"Intra in cont"} className={"mt-10"}/>
 

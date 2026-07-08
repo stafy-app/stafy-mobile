@@ -3,20 +3,21 @@
 import React, {useState} from 'react';
 import {View, Text, ScrollView, TouchableOpacity, Vibration} from "react-native";
 
-import DeletePopupThemed from "@/src/components/DeletePopupThemed";
+import DeletePopupThemed from "@/src/components/ui/DeletePopupThemed";
+import {TimeEntry} from "@/src/types/api";
 
-interface HystoryTableProps {
-    timeEntries: any[],
-    onDelete: (id: number) => void,
+interface HistoryTableProps {
+    timeEntries: TimeEntry[];
+    onDelete: (id: number) => void;
 }
 
 
-export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps) {
+export default function HistoryTable({timeEntries, onDelete}: HistoryTableProps) {
 
     const [showDeletePopup, setShowDeletePopup] = useState<boolean>(false);
-    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [selectedItem, setSelectedItem] = useState<TimeEntry | null>(null);
 
-    const handleLongPress = (item: any) => {
+    const handleLongPress = (item: TimeEntry) => {
         Vibration.vibrate(100);
         setShowDeletePopup(true)
         setSelectedItem(item);
@@ -37,7 +38,6 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
 
                 {/* Table Header: Defines column titles and layout proportions */}
                 <View className="flex-row bg-secondary-50/50 px-5 py-2 border-y border-secondary-100">
-                    {/* Using flex ratios to maintain alignment across different screen sizes */}
                     <Text
                         className="flex-[1.5] text-[11px] font-bold text-secondary-400 tracking-wider uppercase">Activitate</Text>
                     <Text
@@ -48,15 +48,18 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
                         className="flex-1 text-[11px] font-bold text-secondary-400 tracking-wider uppercase text-right">Tarif</Text>
                 </View>
 
-                {/* Table Body: Iterates through the entries and renders each row */}
+                {/* Table Body */}
                 {timeEntries.map((item, index) => {
 
-                    // Check if it's the last item to remove the bottom border
                     const isLastItem = index === timeEntries.length - 1;
 
-                    // Use activity_hours directly from the backend (already in hours)
                     // activity_total is in RON, NOT minutes — do not divide by 60
                     const durationInHours = Number(item.activity_hours.toFixed(2));
+
+                    // Backend now sends a raw ISO datetime — formatting is client presentation logic.
+                    const formattedDate = new Intl.DateTimeFormat('ro-RO', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                    }).format(new Date(item.activity_date));
 
                     return (
                         <TouchableOpacity
@@ -73,7 +76,7 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
 
                             {/* Date Column */}
                             <View className="flex-1 justify-center">
-                                <Text className="text-sm font-medium text-secondary-500">{item.activity_date}</Text>
+                                <Text className="text-sm font-medium text-secondary-500">{formattedDate}</Text>
                             </View>
 
                             {/* Duration Column */}
@@ -96,7 +99,7 @@ export default function HistoryTable({timeEntries, onDelete}: HystoryTableProps)
             <DeletePopupThemed visible={showDeletePopup}
                                onCancel={() => setShowDeletePopup(false)}
                                onConfirm={() => {
-                                   onDelete(selectedItem.id)
+                                   if (selectedItem) onDelete(selectedItem.id)
                                    setShowDeletePopup(false)
                                }}/>
         </ScrollView>

@@ -24,6 +24,7 @@
     "expo-router": "~55.0.10",
     "expo-secure-store": "~55.0.13",
     "expo-status-bar": "~55.0.5",
+    "firebase": "^12.15.0",
     "jwt-decode": "^4.0.0",
     "lucide-react-native": "^1.7.0",
     "react": "19.2.0",

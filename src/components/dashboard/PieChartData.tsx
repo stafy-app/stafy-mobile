@@ -4,21 +4,20 @@ import React, { useMemo } from 'react';
 import { View, Text } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
 import pieChartHelper from "@/src/utils/pieChartHelper"
+import {TimeEntry} from "@/src/types/api";
 
 interface PieChartDataProps {
-    timeEntries: any[];
+    timeEntries: TimeEntry[];
     timeTotal: number;
 }
 
 export default function PieChartData({ timeEntries, timeTotal }: PieChartDataProps) {
 
-    // Get the formatted data
     const processedData = useMemo(
         () => pieChartHelper(timeEntries, timeTotal),
         [timeEntries, timeTotal]
     );
 
-    // Adapt the data format for the PieChart
     const pieData = processedData.map(item => ({
         value: item.percentage,
         color: item.color,

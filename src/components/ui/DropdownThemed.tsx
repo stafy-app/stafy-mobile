@@ -1,4 +1,4 @@
-// src/components/DropdownThemed.tsx
+// src/components/ui/DropdownThemed.tsx
 
 import { View, Text, TouchableOpacity, Modal, FlatList, Pressable } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
@@ -24,10 +24,8 @@ export default function CustomDropdown({
                                            placeholder = "Selectează o opțiune",
                                            icon
                                        }: CustomDropdownProps) {
-    // Set if is open or not
     const [isOpen, setIsOpen] = useState(false);
 
-    // Find the value of the selected option
     const selectedOption = options.find(opt => opt.value === value);
 
     return (
@@ -49,18 +47,15 @@ export default function CustomDropdown({
                 <ChevronDown color={isOpen ? "#F77518" : "#94a3b8"} size={20} />
             </TouchableOpacity>
 
-            {/* 2. Fereastra (Modalul) care apare peste tot ecranul când dai click */}
             <Modal
                 visible={isOpen}
                 transparent={true}
                 animationType="fade"
             >
-                {/* Fundalul întunecat care închide modalul dacă apeși pe el */}
                 <Pressable
                     className="flex-1 bg-black/40 justify-center px-6"
                     onPress={() => setIsOpen(false)}
                 >
-                    {/* Cutiuta albă din centru cu lista de opțiuni */}
                     <View className="bg-white rounded-2xl max-h-[60%] overflow-hidden">
                         <FlatList
                             data={options}
@@ -74,7 +69,7 @@ export default function CustomDropdown({
                                         }`}
                                         onPress={() => {
                                             onSelect(item.value);
-                                            setIsOpen(false); // Închidem lista după ce a ales
+                                            setIsOpen(false);
                                         }}
                                     >
                                         <Text className={`text-base ${isSelected ? 'text-primary-600 font-bold' : 'text-secondary-900'}`}>

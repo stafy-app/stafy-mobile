@@ -1,4 +1,4 @@
-// src/components/ButtonThemed.tsx
+// src/components/ui/ButtonThemed.tsx
 
 import React from 'react';
 import {View, TouchableOpacity, ActivityIndicator, Text} from "react-native";
@@ -36,7 +36,6 @@ export default function ButtonThemed({
                 <ActivityIndicator color={isPrimary ? "white" : "black"}/>
                 : <Text className={`font-semibold text-lg ${textClass}`}>{title}</Text>
             }
-
 
         </TouchableOpacity>
 

@@ -1,4 +1,4 @@
-// src/components/SafeScreenWrapper.tsx
+// src/components/ui/SafeScreenWrapper.tsx
 
 import React from 'react'
 import {View, ViewProps} from 'react-native';
@@ -17,7 +17,6 @@ export default function SafeScreenWrapper({children, className = "", ...props}: 
               style={
                   {
                       paddingTop: insets.top,
-                      //paddingBottom: insets.bottom
                   }
               } {...props} >
 

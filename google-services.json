@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "742729409312",
+    "project_id": "stafy-app",
+    "storage_bucket": "stafy-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742729409312:android:3efde38bc77d40b41cad45",
+        "android_client_info": {
+          "package_name": "com.stafy.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATEES9u4mWe9FEGj2JdqcgZLeJsbKNDrQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
