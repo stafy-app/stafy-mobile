@@ -27,7 +27,8 @@
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./src/assets/Logo_Stafy.png"
+      "favicon": "./src/assets/Logo_Stafy.png",
+      "output": "single"
     },
     "plugins": [
       "expo-secure-store",
