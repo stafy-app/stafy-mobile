@@ -181,3 +181,4 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 | Path alias `@/` resolution | `tsconfig.json` + `metro.config.js` |
 | EAS build config, project ID | `eas.json`, `app.json` |
 | Backend contract (routes, shapes, auth) | [`../stafy-backend/CLAUDE.md`](../stafy-backend/CLAUDE.md) |
+| Manager-facing web client (this app blocks the `manager` role) | [`../stafy-web-app/CLAUDE.md`](../stafy-web-app/CLAUDE.md) |

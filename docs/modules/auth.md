@@ -231,7 +231,7 @@ hardened for release — see Deferred.
 |---|---|
 | Password reset / forgot-password | User-facing request for self-service recovery |
 | Email-verification UX | Product decision to gate features behind a verified email |
-| Orphan-registration recovery (auto-retry or "complete your profile" screen) | First real-world occurrence, or before wider rollout |
+| Orphan-registration recovery ("complete your profile" screen — user is already Firebase-authenticated on 404, so collect `first_name`/`last_name`/`role` and call `POST /api/v1/auth/register` with the current token; not auto-rollback, see Special Aspects) | **Trigger met 2026-07-10**: web deploy on Vercel means real users can now hit this — needed before wider rollout, not deferred further |
 | Backfill / migration of pre-Firebase DB accounts | Only if such accounts are later found to exist — explicitly out of scope per 2026-07-02 decision |
 | Firebase Web app registration (proper `apiKey`/`appId` pair) | Before hardening for public web release |
 | `src/types/api.ts` `User` extended to match `UserOut` | When `company_id`/`auth_provider`/`email_verified`/`firebase_uid` are needed client-side |

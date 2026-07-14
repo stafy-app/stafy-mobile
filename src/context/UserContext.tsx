@@ -6,6 +6,7 @@ import {deleteItem, saveItem, getItem} from "@/src/services/storage";
 import {router} from "expo-router";
 import {User} from "@/src/types/api";
 import {auth} from "@/src/services/firebase";
+import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
 import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
@@ -51,7 +52,7 @@ interface RegisterData {
 interface UserContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
     register: (registerData: RegisterData) => Promise<boolean>;
     resetPassword: (email: string) => Promise<void>;
     logout: () => void;
@@ -153,6 +154,8 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             await saveItem('stafy_userData', JSON.stringify(userData));
 
             setUser(userData);
+
+            return userData;
 
         } catch (error: any) {
             throw new Error(mapAuthError(error));
@@ -327,10 +330,13 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
                 const storedUserData = await getItem('stafy_userData');
 
+                let userData: User;
+
                 if (storedUserData) {
-                    setUser(JSON.parse(storedUserData));
+                    userData = JSON.parse(storedUserData);
+                    setUser(userData);
                 } else {
-                    const userData = await getProfile();
+                    userData = await getProfile();
                     await saveItem('stafy_userData', JSON.stringify(userData));
                     setUser(userData);
                 }
@@ -339,7 +345,11 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 // detected) — this is the single place that should redirect on
                 // auth-state changes. login()/register() are skipped above via
                 // isAuthenticating and drive their own post-success navigation.
-                router.replace("/dashboard");
+                if (isManagerMobileBlocked(userData.role)) {
+                    router.replace("/manager-mobile-blocked");
+                } else {
+                    router.replace("/dashboard");
+                }
 
             } catch (error) {
                 console.error("Error checking authentication:", error);

@@ -15,6 +15,7 @@ import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
+import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
 
 export default function RegisterScreen() {
 
@@ -53,7 +54,11 @@ export default function RegisterScreen() {
             }
 
             if (await register(registerData)) {
-                setRegisterOk(true);
+                if (isManagerMobileBlocked(role)) {
+                    router.replace("/manager-mobile-blocked");
+                } else {
+                    setRegisterOk(true);
+                }
             }
 
         } catch (e) {

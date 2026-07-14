@@ -11,6 +11,7 @@ import TextInputThemed from "@/src/components/ui/TextInputThemed";
 import ButtonThemed from "@/src/components/ui/ButtonThemed";
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
+import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
 
 
 export default function LoginScreen() {
@@ -26,8 +27,13 @@ export default function LoginScreen() {
 
         try{
 
-            await login(email, password);
-            router.replace("/attendance");
+            const userData = await login(email, password);
+
+            if (isManagerMobileBlocked(userData.role)) {
+                router.replace("/manager-mobile-blocked");
+            } else {
+                router.replace("/attendance");
+            }
 
         }catch (e){
             console.log(e);
