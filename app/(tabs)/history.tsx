@@ -36,7 +36,7 @@ export default function HistoryScreen() {
 
             const fetchData = async () => {
                 try {
-                    const response = await api.get<DashboardData>("/api/v1/dashboard/employee")
+                    const response = await api.get<DashboardData>("/api/v1/dashboard/me")
 
                     console.log("[INFO] Data fetched successfully", response.data.time_entries)
                     setTimeEntries(response.data.time_entries)

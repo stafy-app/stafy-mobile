@@ -129,8 +129,8 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 | `UserContext` register | POST | `/api/v1/auth/register` | No — auth only |
 | `UserContext` getProfile | GET | `/api/v1/profile` | No — bootstrap only |
 | `ActivitySelectorThemed` | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
-| `dashboard.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
-| `history.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
+| `dashboard.tsx` | GET | `/api/v1/dashboard/me` | No ⚠ debt |
+| `history.tsx` | GET | `/api/v1/dashboard/me` | No ⚠ debt |
 | `history.tsx` delete | DELETE | `/api/v1/time-entries/{id}` | No ⚠ debt |
 | `attendance.tsx` submit | POST | `/api/v1/time-entries/` | No ⚠ debt |
 | `profile.tsx` rates | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
