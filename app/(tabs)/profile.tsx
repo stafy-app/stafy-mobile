@@ -133,7 +133,12 @@ export default function ProfileScreen() {
 
                 {/* Profile Section */}
                 <View className={"mt-10"}>
-                    <ProfileInfo fullName={user.last_name + " " + user.first_name} role={user.role}/>
+                    <ProfileInfo
+                        fullName={user.last_name + " " + user.first_name}
+                        role={user.role}
+                        companyName={user.company_name}
+                        isOwnCompany={user.is_own_company}
+                    />
                 </View>
 
                 {/* Tips & Tricks Section */}

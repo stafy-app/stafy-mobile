@@ -7,9 +7,13 @@ import {auth} from '@/src/services/firebase';
 // Deprecated — token used to be read from storage instead of asked from Firebase. See interceptor below.
 // import {getItem} from '@/src/services/storage';
 
-const API_URL = Platform.OS === 'web'
-    ? (process.env.EXPO_PUBLIC_API_URL ?? 'https://stafy-s5oi.onrender.com/')
-    : 'https://stafy-s5oi.onrender.com/';
+// Render backend — commented out, local-only for now. Restore the Platform.OS
+// branch below (and stop forcing EXPO_PUBLIC_API_URL/127.0.0.1 for native) when
+// deploying against Render again.
+// const API_URL = Platform.OS === 'web'
+//     ? (process.env.EXPO_PUBLIC_API_URL ?? 'https://stafy-s5oi.onrender.com/')
+//     : 'https://stafy-s5oi.onrender.com/';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
 
 export const api = axios.create(
     {

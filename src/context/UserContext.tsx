@@ -56,6 +56,7 @@ interface UserContextType {
     register: (registerData: RegisterData) => Promise<boolean>;
     resetPassword: (email: string) => Promise<void>;
     logout: () => void;
+    refreshProfile: () => Promise<void>;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -219,6 +220,22 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 throw new Error("Cont creat, dar înregistrarea pe server a eșuat. Contactează administratorul.");
             }
 
+            // Best-effort: if registration auto-joined an inviting manager's
+            // company (see stafy-backend/docs/modules/invitations.md), stash the
+            // company name so the dashboard's first mount after login can show a
+            // native "welcome" alert. Never let this block/fail registration —
+            // registration already succeeded above.
+            try {
+                const profileResponse = await api.get<User>('/api/v1/profile', {
+                    headers: {Authorization: `Bearer ${idToken}`},
+                });
+                if (profileResponse.data.is_own_company === false && profileResponse.data.company_name) {
+                    await saveItem('stafy_pendingJoinAlert', profileResponse.data.company_name);
+                }
+            } catch {
+                // Non-fatal — worst case, the welcome alert just doesn't show.
+            }
+
             return true;
         } catch (error: any) {
             throw new Error(mapAuthError(error));
@@ -271,6 +288,19 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             setIsLoading(false);
         }
 
+    }
+
+    // Re-fetches /api/v1/profile and updates both the context and the
+    // stafy_userData cache, without touching isLoading — UserOnly unmounts its
+    // children while isLoading is true, which would blank the calling screen.
+    // Deliberately doesn't call getProfile() (which toggles isLoading itself).
+    // First caller: the dashboard's invitation-accept flow, which needs the
+    // new company_id/manager_id to show up immediately, not on next cold start.
+    async function refreshProfile() {
+        const response = await api.get<User>('/api/v1/profile');
+        const userData = response.data;
+        await saveItem('stafy_userData', JSON.stringify(userData));
+        setUser(userData);
     }
 
     // Deprecated — hydration used to depend on a locally cached backend JWT
@@ -368,7 +398,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }, [])
 
     return (
-        <UserContext.Provider value={{user, isLoading, login, register, resetPassword, logout}}>
+        <UserContext.Provider value={{user, isLoading, login, register, resetPassword, logout, refreshProfile}}>
             {children}
         </UserContext.Provider>
     )

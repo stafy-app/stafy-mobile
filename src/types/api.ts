@@ -6,6 +6,9 @@ export interface User {
     first_name?: string;
     last_name?: string;
     role?: string;
+    // Only populated by GET /api/v1/profile — every other UserOut response leaves these null.
+    company_name?: string | null;
+    is_own_company?: boolean | null;
 }
 
 export interface TimeEntry {
@@ -32,4 +35,15 @@ export interface DashboardData {
     // Serialized as a JSON string by the backend (Decimal), not a number.
     total_gross_salary: string;
     time_entries: TimeEntry[];
+}
+
+export interface IncomingInvitation {
+    id: string;
+    invited_email: string;
+    status: string;
+    created_at: string;
+    expires_at: string;
+    responded_at: string | null;
+    manager_name: string;
+    company_name: string;
 }

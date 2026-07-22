@@ -65,17 +65,17 @@ No automated test suite exists. Manual smoke-test the changed screen on both nat
 | `app/(auth)/register.tsx` | Live | Registration via Firebase (`createUserWithEmailAndPassword`), then `POST /api/v1/auth/register` with the ID token; role selector: `employee` / `manager` |
 | `src/services/firebase.ts` | Live | Firebase app + `auth` singleton init; native uses `getReactNativePersistence(AsyncStorage)`, web uses default `getAuth` |
 | `app/(tabs)/attendance.tsx` | Live — has debt | Time-entry creation; **not** offline-aware — uses bare `api.post`, not `OfflineManager.apiPost` |
-| `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart; **not** offline-aware — uses bare `api.get`, not `OfflineManager.apiGet` |
+| `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart, plus incoming-invitation cards (accept/reject); **not** offline-aware — uses bare `api.get`/`api.post`, not `OfflineManager` (deliberate for invitations — see `docs/modules/invitations.md` Special Aspects) |
 | `app/(tabs)/history.tsx` | Live — has debt | Time-entry list; both fetch and delete are online-only (bare `api.get` / `api.delete`), not `OfflineManager` |
 | `app/(tabs)/profile.tsx` | Live — has debt | Hourly rates CRUD; edit (`api.patch`) and delete (`api.delete`) are online-only; null-guard missing on `user` |
 | `src/services/OfflineManager.ts` | Live — incomplete | GET (cache) + POST (queue + sync) implemented; PATCH, DELETE, PUT not yet implemented (TODO) |
-| `src/context/UserContext.tsx` | Live | Auth state, login/register/logout, profile fetch; `user` is null before hydration |
+| `src/context/UserContext.tsx` | Live | Auth state, login/register/logout, profile fetch, `refreshProfile()` (re-fetches `/api/v1/profile` without toggling `isLoading`, so `UserOnly` doesn't unmount the calling screen — first caller: dashboard's invitation-accept flow); `user` is null before hydration |
 | `src/hooks/useUser.tsx` | Live | Thin wrapper over `UserContext`; throws if used outside `UserProvider` |
 | `src/components/*Themed.tsx` | Live | Shared design-system components (Button, TextInput, Dropdown, Popup, Header, Footer…) |
 | `src/components/attendance/` | Live | CalendarThemed, TimeSelectorThemed, ActivitySelectorThemed, CalculatorThemed |
-| `src/components/dashboard/` | Live | InfoCard, PieChartData |
+| `src/components/dashboard/` | Live | InfoCard, PieChartData, IncomingInvitationCard (accept/reject actions, see `docs/modules/invitations.md`) |
 | `src/components/history/` | Live | HistoryTable |
-| `src/components/profile/` | Live | ProfileInfo, HourlyRateCard, PopupEdit, PopupAddRate, TipCard |
+| `src/components/profile/` | Live | ProfileInfo (name/role, plus company name + "joined another manager's company" caption when `is_own_company` is `false` — see `docs/modules/auth.md` Special Aspects), HourlyRateCard, PopupEdit, PopupAddRate, TipCard |
 | `src/utils/` | Live | `networkHelper.ts`, `pieChartHelper.ts`, `routeHelper.ts`, `calculateWorkedTime.ts` |
 
 ## CLI Quick Reference
@@ -137,6 +137,9 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 | `profile.tsx` edit rate | PATCH | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
 | `profile.tsx` add activity | POST | `/api/v1/users/me/settings/activities` | No ⚠ debt |
 | `profile.tsx` delete activity | DELETE | `/api/v1/users/me/settings/activities/{id}` | No ⚠ debt |
+| `dashboard.tsx` invitations | GET | `/api/v1/invitations/me` | No — deliberate, see `docs/modules/invitations.md` |
+| `dashboard.tsx` accept invitation | POST | `/api/v1/invitations/{id}/accept` | No — deliberate |
+| `dashboard.tsx` reject invitation | POST | `/api/v1/invitations/{id}/reject` | No — deliberate |
 
 `time_entries` lives under top-level `/api/v1/time-entries`. The profile endpoint (`/api/v1/profile`) is flat, with no `{current_user: ...}` envelope. List responses use a `{data: [...]}` envelope. `hourly_rate_gross`, `rate_hour`, and `total_gross_salary` are JSON strings (`Decimal`, not `number`) — see `src/types/api.ts`.
 
@@ -144,7 +147,7 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 ❌ **`OfflineManager.apiPost` is POST-only.** Items queued offline are always replayed with `api.post(item.endpoint, item.data)` in `apiSync`. Passing a PATCH or DELETE through the queue will fail silently or corrupt data.
 
-❌ **`Platform.OS === 'web'` swaps the base URL.** Native points to `https://stafy-backend.onrender.com/`; web points to `http://127.0.0.1:8000/`. There is no `.env` file — the switch is hardcoded in `src/services/api.ts:7`. If you need a different backend URL, change it there.
+❌ **Both platforms currently point at the local backend, Render is commented out.** `src/services/api.ts` sets `API_URL` to `process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'` for every platform — the `Platform.OS === 'web'` branch that pointed native at `https://stafy-s5oi.onrender.com/` is commented out (kept for when Render is used again), not deleted. `EXPO_PUBLIC_API_URL` comes from `.env.local` (gitignored). **On a physical device, `127.0.0.1` resolves to the phone itself, not the dev machine** — set `EXPO_PUBLIC_API_URL` in `.env.local` to the dev machine's LAN IP (the same IP Metro prints on `just dev`, e.g. `http://192.168.0.172:8000`) to reach a local backend from a real phone; an emulator/simulator or the web build can keep `127.0.0.1`.
 
 ❌ **`user` is `null` before `UserContext` finishes hydration.** `isLoading` is `true` during hydration. Any screen that reads `user.*` must guard against `null`. The existing `// @ts-ignore` at `profile.tsx:146` is debt — do not copy it for new fields.
 

@@ -163,6 +163,8 @@ UserOut {
   auth_provider: string
   email_verified: boolean | null
   role: string | null
+  company_name: string | null      // only populated by GET /profile, see Special Aspects below
+  is_own_company: boolean | null   // only populated by GET /profile
   created_at: string | null   // ISO datetime
   is_active: boolean | null
 }
@@ -216,6 +218,15 @@ in `stafy-backend/app/main.py`. Every mobile API call was missing this prefix un
 404'd silently against the live backend — this affected auth and every other endpoint in the app, not
 auth alone. Before adding a new call, verify the full path against `main.py`'s `include_router` calls.
 
+### Company assignment display (`company_name`/`is_own_company`)
+
+`GET /api/v1/profile` is the only endpoint that populates `UserOut.company_name`/`is_own_company`
+(every other `UserOut` response — dashboard embeds, team roster — leaves both `null`). The profile
+screen (`app/(tabs)/profile.tsx`, via `ProfileInfo`) shows the current company name and whether the
+user is still on their own personal company or was assigned to another one via an accepted
+invitation. `src/types/api.ts`'s `User` type only carries these two extra fields from `UserOut`,
+not the full backend shape — see Deferred.
+
 ### Firebase project configuration gap
 
 `google-services.json` only registers an **Android** app; `src/services/firebase.ts` currently reuses
@@ -234,4 +245,4 @@ hardened for release — see Deferred.
 | Orphan-registration recovery ("complete your profile" screen — user is already Firebase-authenticated on 404, so collect `first_name`/`last_name`/`role` and call `POST /api/v1/auth/register` with the current token; not auto-rollback, see Special Aspects) | **Trigger met 2026-07-10**: web deploy on Vercel means real users can now hit this — needed before wider rollout, not deferred further |
 | Backfill / migration of pre-Firebase DB accounts | Only if such accounts are later found to exist — explicitly out of scope per 2026-07-02 decision |
 | Firebase Web app registration (proper `apiKey`/`appId` pair) | Before hardening for public web release |
-| `src/types/api.ts` `User` extended to match `UserOut` | When `company_id`/`auth_provider`/`email_verified`/`firebase_uid` are needed client-side |
+| `src/types/api.ts` `User` extended with the rest of `UserOut` (`company_id`/`auth_provider`/`email_verified`/`firebase_uid`) | When those fields are needed client-side — `company_name`/`is_own_company` are already present (see Special Aspects), the remaining fields are not |
