@@ -51,7 +51,7 @@ Role here: the backend's local mirror of a Firebase identity, extended with app-
 
 ---
 
-## Auth Lifecycle
+## Lifecycle
 
 ```
                     createUserWithEmailAndPassword         POST /api/v1/auth/register
@@ -84,6 +84,13 @@ app via `onAuthStateChanged`.
 
 ---
 
+## Derived / Aggregated Data
+
+None. Nothing on this module is computed at read time — `UserOut` fields are stored as-is or
+copied from the decoded Firebase token.
+
+---
+
 ## User Flows
 
 ### Flow 1: Register
@@ -101,7 +108,7 @@ app via `onAuthStateChanged`.
 3. `POST /api/v1/auth/login` with `Authorization: Bearer <idToken>`, no body
 4. Backend verifies the token, looks up by `firebase_uid`, syncs `email_verified` + `last_login_at`, returns `UserOut`
 5. Mobile calls `getProfile()`, caches the result, hydrates `UserContext`
-6. On 404 (orphaned account, see Auth Lifecycle): mobile shows "registration not finished" instead of a wrong-credentials message — it cannot auto-retry registration, since the login screen never collects `first_name`/`last_name`/`role`
+6. On 404 (orphaned account, see Lifecycle): mobile shows "registration not finished" instead of a wrong-credentials message — it cannot auto-retry registration, since the login screen never collects `first_name`/`last_name`/`role`
 
 ### Flow 3: Session hydration (cold start)
 
@@ -133,7 +140,15 @@ Auth (stafy-mobile)
 
 ---
 
-## REST API
+## UI / Layout
+
+N/A — no design spec was authored for this module. `app/(auth)/login.tsx` and `register.tsx` use
+the shared `src/components/*Themed.tsx` design-system components (`ButtonThemed`, `TextInputThemed`,
+etc.), same as every other screen — see `stafy-mobile/CLAUDE.md` Module Status.
+
+---
+
+## Data Access
 
 ```
 POST   /api/v1/auth/register
@@ -172,19 +187,13 @@ UserOut {
 
 ---
 
-## Module Boundary
-
-| Owns | References |
-|---|---|
-| `src/services/firebase.ts`, `UserContext.tsx` (mobile) | Firebase Auth (credentials, sessions) |
-| `app/auth/router.py`, `users.User.firebase_uid` (backend) | Firebase Admin SDK (token verification only — never issues tokens itself) |
-
-**Backend never issues its own tokens.** `app/auth/jwt_handler.py` (project-issued JWT creation/verification)
-is legacy dead code, kept but unused — see `stafy-backend/app/auth/CLAUDE.md`.
-
----
-
 ## Special Aspects
+
+### Backend never issues its own tokens
+
+`app/auth/jwt_handler.py` (project-issued JWT creation/verification) is legacy dead code, kept but
+unused — see `stafy-backend/app/auth/CLAUDE.md`. The backend only ever verifies Firebase-issued ID
+tokens via the Firebase Admin SDK.
 
 ### Token attachment (no local caching)
 
