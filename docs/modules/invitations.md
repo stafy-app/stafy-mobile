@@ -142,3 +142,37 @@ benefit from a cached list. Not a precedent for new screens elsewhere.
 |---|---|
 | Dedicated invitations screen | The dashboard becomes too crowded, or invitations need their own notification/badge outside the dashboard |
 | Push notification on new invitation | Push infrastructure exists in this app (none today) |
+
+---
+
+## Manual Testing Procedure
+
+No automated test suite exists in this repo (see `CLAUDE.md`). Run `just web` (fastest loop on
+Windows — no emulator needed) or `just android`/`just ios`, sign in as a seeded or freshly-invited
+employee, and click through the dashboard tab directly — real backend, no mocks. Have a manager
+(via `stafy-web-app`) send/cancel the invitations used below, and clean up afterward.
+
+1. With no pending invitations on the signed-in employee's email, open the dashboard tab → no
+   invitation card renders, rest of the dashboard (hours/salary/pie chart) looks unchanged.
+2. Manager sends an invitation to this employee's email → reopen or refocus the dashboard tab
+   (`useFocusEffect` re-fetches) → an `IncomingInvitationCard` appears above the monthly summary,
+   naming the correct manager and company.
+3. Send a second invitation from a *different* manager to the same email → two cards render
+   independently.
+4. Tap Accept on one card → that button's `ActivityIndicator` spins, the other button on the same
+   card is disabled meanwhile, the *other* card (different invitation) stays fully interactive. On
+   success: the accepted card disappears, and — without a cold restart — the dashboard's
+   hours/salary figures update to reflect the new company (confirms `refreshProfile()` +
+   dashboard re-fetch both fired). Check the profile screen too: company name should now show the
+   joined company with the "added to this company" caption (`is_own_company: false`).
+5. Tap Reject on the remaining card → card disappears, dashboard figures and profile are
+   unchanged (still the employee's own company).
+6. Force a request failure (e.g. toggle airplane mode right before tapping Accept/Reject) → action
+   fails; the card should still be present on next focus (no optimistic removal that would lie
+   about an offline "success" — see Special Aspects) rather than disappearing incorrectly.
+7. Confirm accept/reject never queue offline: with the device offline, tapping either button should
+   not silently succeed or appear in `@global_offline_queue` — this screen is deliberately
+   online-only for these two actions.
+8. Run `just lint` (`npx tsc --noEmit`) clean before considering any change to this screen done, per
+   this repo's `CLAUDE.md`. If the change touches `Platform.OS` branching, smoke-test both `just web`
+   and a native build (`just android`/`just ios`), since web/native can diverge silently.
