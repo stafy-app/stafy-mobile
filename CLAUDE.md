@@ -63,6 +63,7 @@ No automated test suite exists. Manual smoke-test the changed screen on both nat
 |---|---|---|
 | `app/(auth)/login.tsx` | Live | Email + password login via Firebase (`signInWithEmailAndPassword`), then `POST /api/v1/auth/login` with the ID token |
 | `app/(auth)/register.tsx` | Live | Registration via Firebase (`createUserWithEmailAndPassword`), then `POST /api/v1/auth/register` with the ID token; role selector: `employee` / `manager` |
+| `app/(auth)/forgot-password.tsx` | Live | Email-only password reset via Firebase (`sendPasswordResetEmail`), no backend call — linked from `login.tsx`. See `docs/modules/auth.md` Flow 5 |
 | `src/services/firebase.ts` | Live | Firebase app + `auth` singleton init; native uses `getReactNativePersistence(AsyncStorage)`, web uses default `getAuth` |
 | `app/(tabs)/attendance.tsx` | Live — has debt | Time-entry creation; **not** offline-aware — uses bare `api.post`, not `OfflineManager.apiPost` |
 | `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart, plus incoming-invitation cards (accept/reject); **not** offline-aware — uses bare `api.get`/`api.post`, not `OfflineManager` (deliberate for invitations — see `docs/modules/invitations.md` Special Aspects) |

@@ -9,7 +9,7 @@ interface Option {
     value: string;
 }
 
-interface CustomDropdownProps {
+interface DropdownThemedProps {
     options: Option[];
     value: string;
     onSelect: (value: string) => void;
@@ -17,13 +17,13 @@ interface CustomDropdownProps {
     icon?: React.ReactNode;
 }
 
-export default function CustomDropdown({
+export default function DropdownThemed({
                                            options,
                                            value,
                                            onSelect,
                                            placeholder = "Selectează o opțiune",
                                            icon
-                                       }: CustomDropdownProps) {
+                                       }: DropdownThemedProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const selectedOption = options.find(opt => opt.value === value);

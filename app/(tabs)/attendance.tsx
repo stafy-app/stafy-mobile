@@ -1,6 +1,6 @@
 // app/(tabs)/attendance.tsx
 
-import {ScrollView, View, Text} from "react-native";
+import {Alert, ScrollView, View, Text} from "react-native";
 import {useState} from "react";
 
 import {WorkedTimeResult, calculateWorkedTime} from "@/src/utils/calculateWorkedTime";
@@ -35,7 +35,7 @@ export default function AttendanceScreen() {
     const handleSaveToDb = async () => {
 
         if(!activityId) {
-            alert("Te rog selectează o activitate!");
+            Alert.alert("Eroare", "Te rog selectează o activitate!");
             return;
         }
 

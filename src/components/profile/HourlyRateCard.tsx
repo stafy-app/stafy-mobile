@@ -31,20 +31,20 @@ export default function HourlyRateCard({
 
             {/* Left side */}
             <View className="flex-1 pr-4">
-                <Text className="text-lg font-bold text-[#1e293b] mb-1">
+                <Text className="text-lg font-bold text-secondary-800 mb-1">
                     {title}
                 </Text>
-                <Text className="text-sm text-[#64748b]">
+                <Text className="text-sm text-secondary-500">
                     {subtitle}
                 </Text>
             </View>
 
             {/* Right side */}
             <View className="items-end">
-                <Text className="text-xl font-bold text-[#F77518] mb-1">
+                <Text className="text-xl font-bold text-primary-500 mb-1">
                     {price}
                 </Text>
-                <Text className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                <Text className="text-[10px] font-bold text-secondary-400 uppercase tracking-wider">
                     {unitLabel}
                 </Text>
             </View>

@@ -17,13 +17,12 @@ export default function ProfileInfo({fullName, role, companyName, isOwnCompany}:
 
 
     const getInitials = (fullName: string | undefined) => {
-        // @ts-ignore
-        const names = fullName.trim().split(' ');
+        const safeName = fullName ?? "";
+        const names = safeName.trim().split(' ');
         if (names.length >= 2) {
             return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
         }
-        // @ts-ignore
-        return fullName.substring(0, 2).toUpperCase();
+        return safeName.substring(0, 2).toUpperCase();
     };
 
     return (

@@ -31,8 +31,6 @@ export default function ProfileScreen() {
 
     const {user, logout} = useUser();
 
-    if (!user) return null;
-
     useFocusEffect(
         useCallback(() => {
             fetchData()
@@ -123,6 +121,7 @@ export default function ProfileScreen() {
         setIsDeletePopupVisible(false);
     }
 
+    if (!user) return null;
 
     return (
         <SafeScreenWrapper>

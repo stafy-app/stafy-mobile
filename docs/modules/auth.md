@@ -7,10 +7,11 @@ between `stafy-mobile` (client) and `stafy-backend` (FastAPI).
 
 **In scope:** Firebase email/password registration and sign-in from `stafy-mobile`, ID-token
 verification via Firebase Admin SDK on `stafy-backend`, DB user provisioning keyed by Firebase UID,
-per-request token attachment, session persistence, and cold-start hydration.
+per-request token attachment, session persistence, cold-start hydration, and self-service password
+reset via Firebase.
 
-**Out of scope (this release):** password reset / forgot-password, email-verification UX, social/OAuth
-providers, backfill of any pre-Firebase DB accounts, an automated orphan-registration recovery flow.
+**Out of scope (this release):** email-verification UX, social/OAuth providers, backfill of any
+pre-Firebase DB accounts, an automated orphan-registration recovery flow.
 
 ---
 
@@ -26,13 +27,13 @@ providers, backfill of any pre-Firebase DB accounts, an automated orphan-registr
 
 ## Data Objects
 
-### From Firebase (referenced, not owned by the backend)
+### Referenced (not owned)
 
 **Firebase User** — `uid`, `email`, `email_verified`, password credential.
 Role here: sole source of identity and credentials. The backend never stores or sees a password;
 it only ever sees a verified ID token and the claims inside it.
 
-### Backend objects
+### Owned
 
 #### User (existing table — fields relevant to auth)
 
@@ -44,7 +45,7 @@ it only ever sees a verified ID token and the claims inside it.
 | `auth_provider` | string | Hardcoded `"email_password"` at creation time |
 | `role` | enum | `employee` \| `manager` \| `admin` |
 | `is_active` | bool | Soft-disable; `false` → 403 on every request |
-| `company_id` / `personal_company_id` | UUID FK | A personal `Company` row is auto-created at registration |
+| `company_id` / `personal_company_id` | int FK | A personal `Company` row is auto-created at registration |
 
 Role here: the backend's local mirror of a Firebase identity, extended with app-specific fields
 (role, company, active flag) that Firebase has no concept of.
@@ -124,6 +125,14 @@ copied from the decoded Firebase token.
 2. `deleteItem('stafy_userData')`, `setUser(null)`
 3. `onAuthStateChanged` fires with `null` → `_layout.tsx` redirects to `/login`
 
+### Flow 5: Password reset
+
+1. Mobile → `app/(auth)/forgot-password.tsx`, linked from the login screen: email only
+2. `sendPasswordResetEmail(auth, email)` — Firebase-only call, no backend involved
+3. Same success message shown regardless of whether the email matches an account (Firebase's own
+   enumeration-safe behavior) — user is routed back to `/login`
+4. Actual password change happens outside the app, via the link Firebase emails to the address
+
 ---
 
 ## Information Architecture (Mobile)
@@ -135,6 +144,7 @@ Auth (stafy-mobile)
 ├── src/services/api.ts         ← axios interceptor: attaches a fresh ID token per request
 ├── app/(auth)/login.tsx        ← email + password
 ├── app/(auth)/register.tsx     ← name, surname, email, role, password
+├── app/(auth)/forgot-password.tsx ← email only, Firebase-only (see Flow 5)
 └── app/_layout.tsx             ← onAuthStateChanged-driven cold-start redirect
 ```
 
@@ -164,6 +174,9 @@ POST   /api/v1/auth/login
 Every other endpoint in the backend requires the same `Authorization: Bearer <Firebase ID token>`
 header via the `get_current_active_user` dependency — auth is not a separate prefix exempt from
 `/api/v1`; **all** routes, including these two, are mounted under `/api/v1`.
+
+Password reset has no backend endpoint at all — `sendPasswordResetEmail` is a direct Firebase SDK
+call from the mobile client (see Flow 5); the backend is never involved.
 
 ### Key response schema
 
@@ -223,9 +236,9 @@ and login will 404 indefinitely. See Deferred.
 ### `/api/v1` prefix — no exceptions
 
 Every backend router, including `auth_router`, is mounted with `app.include_router(..., prefix="/api/v1")`
-in `stafy-backend/app/main.py`. Every mobile API call was missing this prefix until 2026-07-02 and
-404'd silently against the live backend — this affected auth and every other endpoint in the app, not
-auth alone. Before adding a new call, verify the full path against `main.py`'s `include_router` calls.
+in `stafy-backend/app/main.py`. A mobile API call missing this prefix 404s silently against the live
+backend — this applies to auth and every other endpoint in the app, not auth alone. Before adding a
+new call, verify the full path against `main.py`'s `include_router` calls.
 
 ### Company assignment display (`company_name`/`is_own_company`)
 
@@ -249,9 +262,8 @@ hardened for release — see Deferred.
 
 | Item | Trigger |
 |---|---|
-| Password reset / forgot-password | User-facing request for self-service recovery |
 | Email-verification UX | Product decision to gate features behind a verified email |
-| Orphan-registration recovery ("complete your profile" screen — user is already Firebase-authenticated on 404, so collect `first_name`/`last_name`/`role` and call `POST /api/v1/auth/register` with the current token; not auto-rollback, see Special Aspects) | **Trigger met 2026-07-10**: web deploy on Vercel means real users can now hit this — needed before wider rollout, not deferred further |
-| Backfill / migration of pre-Firebase DB accounts | Only if such accounts are later found to exist — explicitly out of scope per 2026-07-02 decision |
+| Orphan-registration recovery ("complete your profile" screen — user is already Firebase-authenticated on 404, so collect `first_name`/`last_name`/`role` and call `POST /api/v1/auth/register` with the current token; not auto-rollback, see Special Aspects) | **Trigger already met**: the web deploy on Vercel means real users can hit this now — needed before wider rollout |
+| Backfill / migration of pre-Firebase DB accounts | Only if such accounts are later found to exist — explicitly out of scope for now |
 | Firebase Web app registration (proper `apiKey`/`appId` pair) | Before hardening for public web release |
 | `src/types/api.ts` `User` extended with the rest of `UserOut` (`company_id`/`auth_provider`/`email_verified`/`firebase_uid`) | When those fields are needed client-side — `company_name`/`is_own_company` are already present (see Special Aspects), the remaining fields are not |
