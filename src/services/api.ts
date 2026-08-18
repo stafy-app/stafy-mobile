@@ -4,8 +4,6 @@ import axios from 'axios';
 import {Platform} from 'react-native';
 import {signOut} from 'firebase/auth';
 import {auth} from '@/src/services/firebase';
-// Deprecated — token used to be read from storage instead of asked from Firebase. See interceptor below.
-// import {getItem} from '@/src/services/storage';
 
 // Render backend — commented out, local-only for now. Restore the Platform.OS
 // branch below (and stop forcing EXPO_PUBLIC_API_URL/127.0.0.1 for native) when
@@ -23,29 +21,6 @@ export const api = axios.create(
         },
     }
 )
-
-// Deprecated — old interceptor read a static backend-issued JWT from storage.
-// Firebase ID tokens expire after 1h and must be re-fetched per request instead.
-// api.interceptors.request.use(
-//     async (config) => {
-//
-//         try {
-//             const token = await getItem('stafy_token')
-//
-//             if (token) {
-//                 config.headers.Authorization = `Bearer ${token}`
-//             }
-//
-//             return config;
-//         } catch (error) {
-//             console.error("Error getting token from storage:", error);
-//             return config;
-//         }
-//
-//
-//     }, (error) => {
-//         return Promise.reject(error);
-//     })
 
 // Interceptor for adding the Firebase ID token to the request headers.
 // getIdToken() returns the cached token unless it's near expiry, in which case

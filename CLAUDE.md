@@ -160,7 +160,7 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 ❌ **No TypeScript `strict` null-checking on context.** `useUser()` throws if called outside `UserProvider`, but components inside the provider still see `user: User | null`. TypeScript will not catch `user.first_name` accesses — you must add the null guard manually.
 
-❌ **`stafy_token` no longer exists.** Auth moved to the Firebase SDK (`src/services/firebase.ts`) — the ID token is fetched per-request via `auth.currentUser.getIdToken()` in `api.ts`'s interceptor, never cached in storage. Old code paths reading/writing `stafy_token` are commented out (marked deprecated) in `UserContext.tsx`, `api.ts`, `app/_layout.tsx` — don't resurrect them. See `docs/modules/auth.md`.
+❌ **`stafy_token` no longer exists.** Auth moved to the Firebase SDK (`src/services/firebase.ts`) — the ID token is fetched per-request via `auth.currentUser.getIdToken()` in `api.ts`'s interceptor, never cached in storage. See `docs/modules/auth.md`.
 
 ❌ **`getReactNativePersistence` is missing from `firebase/auth`'s public TypeScript types** (known firebase-js-sdk gap — the runtime export exists, the aggregated `.d.ts` doesn't declare it). `src/services/firebase.ts` imports it behind a documented `@ts-expect-error`; do not "fix" this by removing the suppression.
 
