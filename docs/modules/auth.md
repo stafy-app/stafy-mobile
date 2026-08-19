@@ -249,6 +249,14 @@ user is still on their own personal company or was assigned to another one via a
 invitation. `src/types/api.ts`'s `User` type only carries these two extra fields from `UserOut`,
 not the full backend shape — see Deferred.
 
+`profile.tsx` also reads `is_own_company` to gate the Hourly Rates section: the add/edit/delete
+affordances (`+` button, tap-to-edit, long-press-to-delete on each `HourlyRateCard`) only render
+when `is_own_company !== false` — an employee who joined another manager's company via invitation
+sees their rates read-only, since those are backend-enforced as manager-set only past that point
+(`stafy-backend`'s `not_own_company` 403 on `PATCH /users/me/settings/hourly-rates` and
+`POST`/`DELETE /users/me/settings/activities`). The UI gate mirrors that backend rule rather than
+relying on the 403 alone.
+
 ### Firebase project configuration gap
 
 `google-services.json` only registers an **Android** app; `src/services/firebase.ts` currently reuses

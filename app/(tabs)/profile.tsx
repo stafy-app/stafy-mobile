@@ -123,6 +123,8 @@ export default function ProfileScreen() {
 
     if (!user) return null;
 
+    const canEditRates = user.is_own_company !== false;
+
     return (
         <SafeScreenWrapper>
             <ScrollView className={"bg-secondary-50"}>
@@ -164,10 +166,18 @@ export default function ProfileScreen() {
                 <View className={"mt-10 mx-5"}>
                     <View className="flex-row justify-between items-center mb-5">
                         <Text className={"font-semibold text-lg"}>Tarife Orare</Text>
-                        <TouchableOpacity onPress={() => setIsAddPopupVisible(true)} className="p-1">
-                            <Plus size={24} color="#64748b" />
-                        </TouchableOpacity>
+                        {canEditRates && (
+                            <TouchableOpacity onPress={() => setIsAddPopupVisible(true)} className="p-1">
+                                <Plus size={24} color="#64748b" />
+                            </TouchableOpacity>
+                        )}
                     </View>
+
+                    {!canEditRates && (
+                        <Text className={"text-xs text-secondary-400 mb-3"}>
+                            Tariful este stabilit de managerul companiei.
+                        </Text>
+                    )}
 
                     {rates.map((rate) => (
                         <HourlyRateCard
@@ -176,8 +186,8 @@ export default function ProfileScreen() {
                             subtitle={""}
                             price={rate.hourly_rate_gross.toString() + " RON"}
                             unitLabel={"per Oră"}
-                            onPress={() => handleRatePress(rate)}
-                            onLongPress={() => handleRateLongPress(rate)}
+                            onPress={canEditRates ? () => handleRatePress(rate) : undefined}
+                            onLongPress={canEditRates ? () => handleRateLongPress(rate) : undefined}
                         />
                     ))}
                 </View>
