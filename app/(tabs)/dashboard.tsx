@@ -87,6 +87,8 @@ export default function DashboardScreen() {
             Alert.alert("Bun venit!", `Ai fost adăugat cu succes în echipa ${invitation.company_name}.`)
         } catch (error) {
             console.error("Failed to accept invitation", error)
+            const detail = (error as any)?.response?.data?.detail
+            Alert.alert("Eroare", detail || "Nu am putut accepta invitația. Te rog încearcă din nou.")
         } finally {
             setRespondingId(null)
             setRespondingAction(null)
@@ -101,6 +103,8 @@ export default function DashboardScreen() {
             setInvitations((current) => current.filter((i) => i.id !== invitation.id))
         } catch (error) {
             console.error("Failed to reject invitation", error)
+            const detail = (error as any)?.response?.data?.detail
+            Alert.alert("Eroare", detail || "Nu am putut respinge invitația. Te rog încearcă din nou.")
         } finally {
             setRespondingId(null)
             setRespondingAction(null)
