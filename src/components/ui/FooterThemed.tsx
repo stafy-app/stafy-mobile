@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
+import Constants from 'expo-constants';
 
 interface FooterThemedProps {
     version?: string;
 }
 
-export default function FooterThemed({ version = "v0.2.0" }: FooterThemedProps) {
+export default function FooterThemed({ version = `v${Constants.expoConfig?.version}` }: FooterThemedProps) {
     return (
         <View className="py-6 items-center justify-center w-full">
             <Text className="text-xs font-medium text-secondary-400 tracking-wider">

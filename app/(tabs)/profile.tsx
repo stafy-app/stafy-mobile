@@ -9,7 +9,6 @@ import {useFocusEffect} from "expo-router";
 import {useCallback, useState} from "react";
 import {api} from "@/src/services/api";
 import useUser from "@/src/hooks/useUser";
-import Constants from "expo-constants";
 import TipCard from "@/src/components/profile/TipCard";
 
 import {BellRing, Clock, Scan, Wallet, Plus} from "lucide-react-native";
@@ -195,9 +194,6 @@ export default function ProfileScreen() {
 
                 {/* LogOut Section */}
                 <View className={"my-10 mx-5"}>
-                    <Text className={"text-center text-xs text-secondary-400 mb-3"}>
-                        v{Constants.expoConfig?.version}
-                    </Text>
                     <ButtonThemed title={"Deconectare"} onPress={logout} height={"h-12"}/>
                 </View>
 
