@@ -6,9 +6,19 @@ import UserProvider from "@/src/context/UserContext";
 import {Uniwind} from "uniwind";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {StatusBar} from "expo-status-bar";
+import * as Sentry from '@sentry/react-native';
 
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+    Sentry.init({
+        dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+        environment: process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT ?? (__DEV__ ? 'development' : 'production'),
+        tracesSampleRate: 0,
+        sendDefaultPii: false,
+        enableLogs: true,
+    });
+}
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
     Uniwind.setTheme('light');
 
     // Removed 2026-07-02 — this was a second, unguarded onAuthStateChanged
@@ -34,7 +44,7 @@ export default function RootLayout() {
             </UserProvider>
         </>);
 
-}
+});
 
 
 // ── Offline Sync (disabled — kept for future use) ────────────────────────────

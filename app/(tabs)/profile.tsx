@@ -5,7 +5,7 @@ import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import HeaderThemed from "@/src/components/ui/HeaderThemed";
 import ProfileInfo from "@/src/components/profile/ProfileInfo";
-import {useFocusEffect} from "expo-router";
+import {useFocusEffect, useRouter} from "expo-router";
 import {useCallback, useState} from "react";
 import {api} from "@/src/services/api";
 import useUser from "@/src/hooks/useUser";
@@ -30,6 +30,7 @@ export default function ProfileScreen() {
     const [selectedRate, setSelectedRate] = useState<HourlyRate | null>(null);
 
     const {user, logout} = useUser();
+    const router = useRouter();
 
     useFocusEffect(
         useCallback(() => {
@@ -196,6 +197,13 @@ export default function ProfileScreen() {
                 <View className={"my-10 mx-5"}>
                     <ButtonThemed title={"Deconectare"} onPress={logout} height={"h-12"}/>
                 </View>
+
+                {/* Dev-only Section */}
+                {__DEV__ && (
+                    <View className={"mb-10 mx-5"}>
+                        <ButtonThemed title={"Dev: Tests"} variant={""} onPress={() => router.push("/tests")} height={"h-12"}/>
+                    </View>
+                )}
 
                 {/* Footer Section */}
                 <FooterThemed />
