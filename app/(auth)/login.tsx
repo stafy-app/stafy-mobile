@@ -12,6 +12,7 @@ import ButtonThemed from "@/src/components/ui/ButtonThemed";
 import {useState} from "react";
 import useUser from "@/src/hooks/useUser";
 import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
+import {OrphanRegistrationError} from "@/src/context/UserContext";
 
 
 export default function LoginScreen() {
@@ -36,8 +37,12 @@ export default function LoginScreen() {
             }
 
         }catch (e){
+            if (e instanceof OrphanRegistrationError) {
+                router.replace("/complete-registration");
+                return;
+            }
             console.log(e);
-            Alert.alert("Eroare", "Email sau parola incorecte");
+            Alert.alert("Eroare", e instanceof Error ? e.message : "Email sau parola incorecte");
         }finally {
             setIsLoading(false);
         }

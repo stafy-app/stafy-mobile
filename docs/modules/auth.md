@@ -11,7 +11,7 @@ per-request token attachment, session persistence, cold-start hydration, and sel
 reset via Firebase.
 
 **Out of scope (this release):** email-verification UX, social/OAuth providers, backfill of any
-pre-Firebase DB accounts, an automated orphan-registration recovery flow.
+pre-Firebase DB accounts.
 
 ---
 
@@ -96,11 +96,15 @@ copied from the decoded Firebase token.
 
 ### Flow 1: Register
 
-1. Mobile → Register screen: name, surname, email, role, password
-2. `createUserWithEmailAndPassword(auth, email, password)` — Firebase creates the account, returns a `User` + ID token
+1. Mobile → Register screen: a 4-step wizard (welcome → role → identity → account), not a single form. Data accumulates in local component state across steps; nothing is sent over the network until the last step.
+   - **Welcome**: branding only, no input.
+   - **Role**: `employee` / `manager`. Selecting `manager` redirects straight to `/manager-mobile-blocked` — the wizard never asks a manager for identity/account details on mobile.
+   - **Identity**: name, surname.
+   - **Account**: email, password, confirm-password (client-side match check; no confirm-password field existed before this wizard).
+2. On the last step: `createUserWithEmailAndPassword(auth, email, password)` — Firebase creates the account, returns a `User` + ID token
 3. `POST /api/v1/auth/register` with `Authorization: Bearer <idToken>`, body `{first_name, last_name, role}` — email/password never leave the Firebase SDK call
 4. Backend decodes the token, creates the `users` row + a personal `Company`, returns `UserOut`
-5. On backend failure after step 2 succeeded: Firebase account is left in place (no rollback — see Special Aspects); user sees a distinct error, not the generic one
+5. On backend failure after step 2 succeeded: Firebase account is left in place (no rollback — see Special Aspects); the wizard shows a distinct error, not the generic one; the account is now orphaned and recovers via Flow 6, not by retrying Flow 1 (`createUserWithEmailAndPassword` now fails `auth/email-already-in-use`)
 
 ### Flow 2: Login
 
@@ -109,7 +113,7 @@ copied from the decoded Firebase token.
 3. `POST /api/v1/auth/login` with `Authorization: Bearer <idToken>`, no body
 4. Backend verifies the token, looks up by `firebase_uid`, syncs `email_verified` + `last_login_at`, returns `UserOut`
 5. Mobile calls `getProfile()`, caches the result, hydrates `UserContext`
-6. On 404 (orphaned account, see Lifecycle): mobile shows "registration not finished" instead of a wrong-credentials message — it cannot auto-retry registration, since the login screen never collects `first_name`/`last_name`/`role`
+6. On 404 (orphaned account, see Lifecycle): `login()` throws `OrphanRegistrationError` instead of the generic auth error; `login.tsx` catches it and routes to `/complete-registration` (Flow 6) instead of showing an Alert
 
 ### Flow 3: Session hydration (cold start)
 
@@ -133,6 +137,16 @@ copied from the decoded Firebase token.
    enumeration-safe behavior) — user is routed back to `/login`
 4. Actual password change happens outside the app, via the link Firebase emails to the address
 
+### Flow 6: Orphan-registration recovery
+
+1. Reached only via Flow 2 step 6 (`OrphanRegistrationError`) — the user is already Firebase-authenticated at this point, `auth.currentUser` is guaranteed set
+2. Mobile → `app/(auth)/complete-registration.tsx`: name, surname, then role (same fields Flow 1's wizard collects, minus email/password — those already exist in Firebase)
+3. `completeRegistration()` reads `auth.currentUser.getIdToken()` directly — no `signInWithEmailAndPassword` call, the session already exists
+4. `POST /api/v1/auth/register` with that token, same body shape as Flow 1 step 3 — finishes provisioning the `users` row that was missing
+5. On success: `getProfile()`, cache, `setUser()`, then route to `/manager-mobile-blocked` or `/attendance` same as Flow 2's post-login redirect
+6. On repeated backend failure: same generic distinct-error message as Flow 1 step 5, retryable from the same screen — no dead end
+7. A "Deconectează-te" action is available on this screen for a user who wants to abandon instead of finishing
+
 ---
 
 ## Information Architecture (Mobile)
@@ -140,11 +154,13 @@ copied from the decoded Firebase token.
 ```
 Auth (stafy-mobile)
 ├── src/services/firebase.ts    ← Firebase app + auth singleton (native persistence via AsyncStorage)
-├── src/context/UserContext.tsx ← login / register / logout / cold-start hydration
+├── src/context/UserContext.tsx ← login / register / completeRegistration / logout / cold-start hydration
 ├── src/services/api.ts         ← axios interceptor: attaches a fresh ID token per request
 ├── app/(auth)/login.tsx        ← email + password
-├── app/(auth)/register.tsx     ← name, surname, email, role, password
+├── app/(auth)/register.tsx     ← 4-step onboarding wizard: welcome → role → identity → account (see Flow 1)
+├── app/(auth)/complete-registration.tsx ← orphan-registration recovery: name, surname, then role (see Flow 6)
 ├── app/(auth)/forgot-password.tsx ← email only, Firebase-only (see Flow 5)
+├── app/manager-mobile-blocked.tsx ← role gate landing screen, not under (auth)/ — reached from the register wizard's role step, Flow 6, and cold-start hydration alike, whenever `isManagerMobileBlocked(role)` is true
 └── app/_layout.tsx             ← onAuthStateChanged-driven cold-start redirect
 ```
 
@@ -152,9 +168,15 @@ Auth (stafy-mobile)
 
 ## UI / Layout
 
-N/A — no design spec was authored for this module. `app/(auth)/login.tsx` and `register.tsx` use
-the shared `src/components/*Themed.tsx` design-system components (`ButtonThemed`, `TextInputThemed`,
-etc.), same as every other screen — see `stafy-mobile/CLAUDE.md` Module Status.
+N/A — no design spec was authored for this module. `app/(auth)/login.tsx`, `register.tsx`, and
+`complete-registration.tsx` use the shared `src/components/*Themed.tsx` design-system components
+(`ButtonThemed`, `TextInputThemed`, etc.), same as every other screen — see `stafy-mobile/CLAUDE.md`
+Module Status.
+
+`register.tsx` additionally uses React Native's built-in `Animated` API (no new dependency —
+`reanimated`/`moti` aren't installed): a fade + slide-up on every step change, and two looping,
+low-opacity decorative circles drifting slowly behind the content for the whole wizard. Purely
+cosmetic — `pointerEvents="none"` on both, no interaction depends on them.
 
 ---
 
@@ -225,13 +247,16 @@ isn't confirmed synced yet (login), clobbering state. Guarded with an `isAuthent
 the duration of `login()`/`register()`; the listener no-ops while it's `true` and only handles
 cold-start hydration and out-of-band sign-outs.
 
-### Orphan registration (no recovery path yet)
+### Orphan registration
 
 If `createUserWithEmailAndPassword` succeeds but the subsequent `POST /api/v1/auth/register` fails
 (network blip, backend down, rejected role), the Firebase account is deliberately left in place —
 deleting it can itself fail offline, and a half-rolled-back state is worse than a recoverable one.
-There is currently **no self-service recovery**: the user can't re-register (`auth/email-already-in-use`)
-and login will 404 indefinitely. See Deferred.
+The user can't re-register (`auth/email-already-in-use`) and a normal login 404s — self-service
+recovery is Flow 6 (`app/(auth)/complete-registration.tsx`), reached automatically when `login()`
+throws `OrphanRegistrationError`. Cold-start hydration (Flow 3) does **not** route here directly on
+a 404 — it still falls back to `/login`, so a relaunch while orphaned requires one extra login
+attempt before landing on Flow 6; only `login()` classifies the 404 as recoverable.
 
 ### `/api/v1` prefix — no exceptions
 
@@ -257,6 +282,17 @@ sees their rates read-only, since those are backend-enforced as manager-set only
 `POST`/`DELETE /users/me/settings/activities`). The UI gate mirrors that backend rule rather than
 relying on the 403 alone.
 
+### `manager-mobile-blocked.tsx`'s logout always navigates explicitly
+
+Its "Deconectare" button calls `logout()` then `router.replace("/login")` itself, rather than relying
+on `logout()`'s own side effect (`onAuthStateChanged` firing `null` → `_layout.tsx`/`UserContext.tsx`
+redirecting, see Flow 4). That side effect only fires on an actual Firebase state *transition*.
+Reached from the register wizard's role step, `auth.currentUser` is often already `null` (no account
+was ever created — picking `manager` redirects before any Firebase call), so `signOut(auth)` is a
+no-op and no state transition occurs, and the automatic redirect never fires. The explicit
+`router.replace` makes the button work from every entry point (register wizard, Flow 6, cold-start
+hydration of an existing manager), not just the ones where a real session existed.
+
 ### Firebase project configuration gap
 
 `google-services.json` only registers an **Android** app; `src/services/firebase.ts` currently reuses
@@ -271,7 +307,7 @@ hardened for release — see Deferred.
 | Item | Trigger |
 |---|---|
 | Email-verification UX | Product decision to gate features behind a verified email |
-| Orphan-registration recovery ("complete your profile" screen — user is already Firebase-authenticated on 404, so collect `first_name`/`last_name`/`role` and call `POST /api/v1/auth/register` with the current token; not auto-rollback, see Special Aspects) | **Trigger already met**: the web deploy on Vercel means real users can hit this now — needed before wider rollout |
+| Cold-start hydration (Flow 3) routing straight to `/complete-registration` on a 404, instead of `/login` first (see Special Aspects → Orphan registration) | If the extra login attempt on relaunch turns out to be a real friction point in practice |
 | Backfill / migration of pre-Firebase DB accounts | Only if such accounts are later found to exist — explicitly out of scope for now |
 | Firebase Web app registration (proper `apiKey`/`appId` pair) | Before hardening for public web release |
 | `src/types/api.ts` `User` extended with the rest of `UserOut` (`company_id`/`auth_provider`/`email_verified`/`firebase_uid`) | When those fields are needed client-side — `company_name`/`is_own_company` are already present (see Special Aspects), the remaining fields are not |

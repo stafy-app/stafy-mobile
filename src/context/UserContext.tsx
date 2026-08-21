@@ -44,9 +44,27 @@ interface RegisterData {
     name: string;
     surname: string;
     email: string;
-    phone?: string;
     role: string;
     password: string;
+}
+
+interface CompleteRegistrationData {
+    name: string;
+    surname: string;
+    role: string;
+}
+
+// Thrown by login() when the Firebase account exists but the backend row
+// doesn't (a previous registration attempt was interrupted before the
+// backend call completed — see docs/modules/auth.md, Special Aspects →
+// Orphan registration). The user is already Firebase-authenticated at this
+// point, so the caller should route to /complete-registration instead of
+// showing a dead-end error.
+export class OrphanRegistrationError extends Error {
+    constructor() {
+        super("Înregistrarea nu a fost finalizată ultima dată.");
+        this.name = "OrphanRegistrationError";
+    }
 }
 
 interface UserContextType {
@@ -54,6 +72,7 @@ interface UserContextType {
     isLoading: boolean;
     login: (email: string, password: string) => Promise<User>;
     register: (registerData: RegisterData) => Promise<boolean>;
+    completeRegistration: (data: CompleteRegistrationData) => Promise<boolean>;
     resetPassword: (email: string) => Promise<void>;
     logout: () => void;
     refreshProfile: () => Promise<void>;
@@ -89,13 +108,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 });
             } catch (backendError: any) {
                 if (backendError.response?.status === 404) {
-                    // Firebase account exists but the backend row doesn't — a
-                    // previous registration attempt was interrupted before the
-                    // backend call completed. Login has no first_name/last_name/
-                    // role to finish provisioning with, so surface this distinctly
-                    // instead of guessing data. Recovery UX is a known follow-up
-                    // (see docs/modules/auth.md, Special Aspects → Orphan registration).
-                    throw new Error("Înregistrarea nu a fost finalizată. Încearcă să te înregistrezi din nou.");
+                    throw new OrphanRegistrationError();
                 }
                 throw backendError;
             }
@@ -109,6 +122,9 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             return userData;
 
         } catch (error: any) {
+            if (error instanceof OrphanRegistrationError) {
+                throw error;
+            }
             throw new Error(mapAuthError(error));
         } finally {
             setIsLoading(false);
@@ -165,8 +181,15 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 // Firebase account now exists but the backend row doesn't (network
                 // blip, backend down, invalid role). We deliberately do NOT delete
                 // the Firebase user here — deletion can itself fail offline, and a
-                // half-rolled-back state is worse than a recoverable one. Recovery
-                // UX is a known follow-up (see docs/modules/auth.md, Special Aspects → Orphan registration).
+                // half-rolled-back state is worse than a recoverable one. The user
+                // recovers via /complete-registration, reached from login()'s
+                // OrphanRegistrationError (see completeRegistration() below and
+                // docs/modules/auth.md, Special Aspects → Orphan registration).
+                console.error(
+                    "POST /api/v1/auth/register failed:",
+                    backendError?.response?.status,
+                    backendError?.response?.data ?? backendError?.message
+                );
                 throw new Error("Cont creat, dar înregistrarea pe server a eșuat. Contactează administratorul.");
             }
 
@@ -185,6 +208,55 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
             } catch {
                 // Non-fatal — worst case, the welcome alert just doesn't show.
             }
+
+            return true;
+        } catch (error: any) {
+            throw new Error(mapAuthError(error));
+        } finally {
+            setIsLoading(false);
+            isAuthenticating.current = false;
+        }
+    }
+
+    // Finishes provisioning the backend row for a Firebase account that
+    // already exists — the orphan-registration recovery path. auth.currentUser
+    // is guaranteed to be set here: this is only reachable via login()'s
+    // OrphanRegistrationError, which fires after signInWithEmailAndPassword
+    // already succeeded.
+    async function completeRegistration(data: CompleteRegistrationData) {
+
+        try {
+            setIsLoading(true);
+            isAuthenticating.current = true;
+
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser) {
+                throw new Error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
+            }
+            const idToken = await firebaseUser.getIdToken();
+
+            try {
+                await api.post('/api/v1/auth/register', {
+                    first_name: data.name,
+                    last_name: data.surname,
+                    role: data.role,
+                }, {
+                    headers: {Authorization: `Bearer ${idToken}`},
+                });
+            } catch (backendError: any) {
+                console.error(
+                    "POST /api/v1/auth/register (complete-registration) failed:",
+                    backendError?.response?.status,
+                    backendError?.response?.data ?? backendError?.message
+                );
+                throw new Error("Înregistrarea nu a putut fi finalizată. Încearcă din nou mai târziu.");
+            }
+
+            const userData = await getProfile();
+
+            await saveItem('stafy_userData', JSON.stringify(userData));
+
+            setUser(userData);
 
             return true;
         } catch (error: any) {
@@ -314,7 +386,8 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }, [])
 
     return (
-        <UserContext.Provider value={{user, isLoading, login, register, resetPassword, logout, refreshProfile}}>
+        <UserContext.Provider
+            value={{user, isLoading, login, register, completeRegistration, resetPassword, logout, refreshProfile}}>
             {children}
         </UserContext.Provider>
     )
