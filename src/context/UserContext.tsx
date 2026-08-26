@@ -6,6 +6,7 @@ import {deleteItem, saveItem, getItem} from "@/src/services/storage";
 import {router} from "expo-router";
 import {User} from "@/src/types/api";
 import {auth} from "@/src/services/firebase";
+import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
 import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
@@ -43,18 +44,38 @@ interface RegisterData {
     name: string;
     surname: string;
     email: string;
-    phone?: string;
     role: string;
     password: string;
+}
+
+interface CompleteRegistrationData {
+    name: string;
+    surname: string;
+    role: string;
+}
+
+// Thrown by login() when the Firebase account exists but the backend row
+// doesn't (a previous registration attempt was interrupted before the
+// backend call completed — see docs/modules/auth.md, Special Aspects →
+// Orphan registration). The user is already Firebase-authenticated at this
+// point, so the caller should route to /complete-registration instead of
+// showing a dead-end error.
+export class OrphanRegistrationError extends Error {
+    constructor() {
+        super("Înregistrarea nu a fost finalizată ultima dată.");
+        this.name = "OrphanRegistrationError";
+    }
 }
 
 interface UserContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
     register: (registerData: RegisterData) => Promise<boolean>;
+    completeRegistration: (data: CompleteRegistrationData) => Promise<boolean>;
     resetPassword: (email: string) => Promise<void>;
     logout: () => void;
+    refreshProfile: () => Promise<void>;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -72,56 +93,6 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     // state that login()/register() are about to set correctly.
     const isAuthenticating = useRef(false);
 
-    // Deprecated — backend no longer accepts email/password on /auth/login, it
-    // only accepts a Firebase ID token in the Authorization header. Kept here
-    // for reference until the migration settles. See replacement below.
-    // async function login(email: string, password: string) {
-    //
-    //     try {
-    //
-    //         setIsLoading(true);
-    //
-    //         const formData = new FormData();
-    //         formData.append('username', email);
-    //         formData.append('password', password);
-    //
-    //         console.log("Sending login request with data: " +
-    //             "\nEmail: " + formData.get('username'));
-    //
-    //         const response = await api.post('/auth/login', formData, {
-    //             headers: {
-    //                 'Content-Type': 'multipart/form-data',
-    //             }
-    //         });
-    //
-    //
-    //         if (!response) {
-    //             console.error("No response received from the server");
-    //             throw new Error("No response received from the server");
-    //         }
-    //
-    //         console.log("Response from backend: ", response.data);
-    //
-    //         const {id, access_token: token, token_type, role} = response.data;
-    //
-    //         await saveItem('stafy_token', token);
-    //
-    //         const userData = await getProfile()
-    //
-    //         await saveItem('stafy_userData', JSON.stringify(userData));
-    //
-    //         setUser(userData)
-    //
-    //         console.log("Redirecting to home page\nId: ", id, "\nName: ", userData.first_name);
-    //
-    //     } catch (error: any) {
-    //         console.log(error.response.data.message)
-    //         throw new Error(error.response.data.message);
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // }
-
     async function login(email: string, password: string) {
 
         try {
@@ -137,13 +108,7 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 });
             } catch (backendError: any) {
                 if (backendError.response?.status === 404) {
-                    // Firebase account exists but the backend row doesn't — a
-                    // previous registration attempt was interrupted before the
-                    // backend call completed. Login has no first_name/last_name/
-                    // role to finish provisioning with, so surface this distinctly
-                    // instead of guessing data. Recovery UX is a known follow-up
-                    // (see docs/modules/auth.md, Special Aspects → Orphan registration).
-                    throw new Error("Înregistrarea nu a fost finalizată. Încearcă să te înregistrezi din nou.");
+                    throw new OrphanRegistrationError();
                 }
                 throw backendError;
             }
@@ -154,7 +119,12 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             setUser(userData);
 
+            return userData;
+
         } catch (error: any) {
+            if (error instanceof OrphanRegistrationError) {
+                throw error;
+            }
             throw new Error(mapAuthError(error));
         } finally {
             setIsLoading(false);
@@ -211,10 +181,82 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 // Firebase account now exists but the backend row doesn't (network
                 // blip, backend down, invalid role). We deliberately do NOT delete
                 // the Firebase user here — deletion can itself fail offline, and a
-                // half-rolled-back state is worse than a recoverable one. Recovery
-                // UX is a known follow-up (see docs/modules/auth.md, Special Aspects → Orphan registration).
+                // half-rolled-back state is worse than a recoverable one. The user
+                // recovers via /complete-registration, reached from login()'s
+                // OrphanRegistrationError (see completeRegistration() below and
+                // docs/modules/auth.md, Special Aspects → Orphan registration).
+                console.error(
+                    "POST /api/v1/auth/register failed:",
+                    backendError?.response?.status,
+                    backendError?.response?.data ?? backendError?.message
+                );
                 throw new Error("Cont creat, dar înregistrarea pe server a eșuat. Contactează administratorul.");
             }
+
+            // Best-effort: if registration auto-joined an inviting manager's
+            // company (see stafy-backend/docs/modules/invitations.md), stash the
+            // company name so the dashboard's first mount after login can show a
+            // native "welcome" alert. Never let this block/fail registration —
+            // registration already succeeded above.
+            try {
+                const profileResponse = await api.get<User>('/api/v1/profile', {
+                    headers: {Authorization: `Bearer ${idToken}`},
+                });
+                if (profileResponse.data.is_own_company === false && profileResponse.data.company_name) {
+                    await saveItem('stafy_pendingJoinAlert', profileResponse.data.company_name);
+                }
+            } catch {
+                // Non-fatal — worst case, the welcome alert just doesn't show.
+            }
+
+            return true;
+        } catch (error: any) {
+            throw new Error(mapAuthError(error));
+        } finally {
+            setIsLoading(false);
+            isAuthenticating.current = false;
+        }
+    }
+
+    // Finishes provisioning the backend row for a Firebase account that
+    // already exists — the orphan-registration recovery path. auth.currentUser
+    // is guaranteed to be set here: this is only reachable via login()'s
+    // OrphanRegistrationError, which fires after signInWithEmailAndPassword
+    // already succeeded.
+    async function completeRegistration(data: CompleteRegistrationData) {
+
+        try {
+            setIsLoading(true);
+            isAuthenticating.current = true;
+
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser) {
+                throw new Error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
+            }
+            const idToken = await firebaseUser.getIdToken();
+
+            try {
+                await api.post('/api/v1/auth/register', {
+                    first_name: data.name,
+                    last_name: data.surname,
+                    role: data.role,
+                }, {
+                    headers: {Authorization: `Bearer ${idToken}`},
+                });
+            } catch (backendError: any) {
+                console.error(
+                    "POST /api/v1/auth/register (complete-registration) failed:",
+                    backendError?.response?.status,
+                    backendError?.response?.data ?? backendError?.message
+                );
+                throw new Error("Înregistrarea nu a putut fi finalizată. Încearcă din nou mai târziu.");
+            }
+
+            const userData = await getProfile();
+
+            await saveItem('stafy_userData', JSON.stringify(userData));
+
+            setUser(userData);
 
             return true;
         } catch (error: any) {
@@ -270,39 +312,18 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
     }
 
-    // Deprecated — hydration used to depend on a locally cached backend JWT
-    // (`stafy_token`). Source of truth is now Firebase's own auth state. See
-    // replacement below.
-    // useEffect(() => {
-    //
-    //     const authCheck = async () => {
-    //         try {
-    //             setIsLoading(true);
-    //
-    //             const storedUserData = await getItem('stafy_userData');
-    //             const storedToken = await getItem('stafy_token');
-    //
-    //             if (storedUserData && storedToken){
-    //                 setUser(JSON.parse(storedUserData));
-    //                 console.log("User data and token found in storage");
-    //             } else{
-    //                 console.error("No user data or token found in storage");
-    //             }
-    //
-    //         } catch (error) {
-    //             console.error("Error checking authentication:", error);
-    //
-    //             await deleteItem('stafy_userData');
-    //             await deleteItem('stafy_token');
-    //
-    //         }finally {
-    //             setIsLoading(false);
-    //         }
-    //     }
-    //
-    //     authCheck();
-    //
-    // }, [])
+    // Re-fetches /api/v1/profile and updates both the context and the
+    // stafy_userData cache, without touching isLoading — UserOnly unmounts its
+    // children while isLoading is true, which would blank the calling screen.
+    // Deliberately doesn't call getProfile() (which toggles isLoading itself).
+    // First caller: the dashboard's invitation-accept flow, which needs the
+    // new company_id/manager_id to show up immediately, not on next cold start.
+    async function refreshProfile() {
+        const response = await api.get<User>('/api/v1/profile');
+        const userData = response.data;
+        await saveItem('stafy_userData', JSON.stringify(userData));
+        setUser(userData);
+    }
 
     useEffect(() => {
 
@@ -327,10 +348,13 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
                 const storedUserData = await getItem('stafy_userData');
 
+                let userData: User;
+
                 if (storedUserData) {
-                    setUser(JSON.parse(storedUserData));
+                    userData = JSON.parse(storedUserData);
+                    setUser(userData);
                 } else {
-                    const userData = await getProfile();
+                    userData = await getProfile();
                     await saveItem('stafy_userData', JSON.stringify(userData));
                     setUser(userData);
                 }
@@ -339,7 +363,11 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
                 // detected) — this is the single place that should redirect on
                 // auth-state changes. login()/register() are skipped above via
                 // isAuthenticating and drive their own post-success navigation.
-                router.replace("/dashboard");
+                if (isManagerMobileBlocked(userData.role)) {
+                    router.replace("/manager-mobile-blocked");
+                } else {
+                    router.replace("/dashboard");
+                }
 
             } catch (error) {
                 console.error("Error checking authentication:", error);
@@ -358,7 +386,8 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
     }, [])
 
     return (
-        <UserContext.Provider value={{user, isLoading, login, register, resetPassword, logout}}>
+        <UserContext.Provider
+            value={{user, isLoading, login, register, completeRegistration, resetPassword, logout, refreshProfile}}>
             {children}
         </UserContext.Provider>
     )

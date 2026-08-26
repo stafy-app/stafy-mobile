@@ -3,24 +3,26 @@
 
 import React from 'react';
 import {View, Text, Image} from "react-native";
+import {Building2} from "lucide-react-native";
 
 interface ProfileInfoProps {
     fullName: string | undefined;
     role: string | undefined;
+    companyName?: string | null;
+    isOwnCompany?: boolean | null;
 }
 
 
-export default function ProfileInfo({fullName, role} : ProfileInfoProps) {
+export default function ProfileInfo({fullName, role, companyName, isOwnCompany}: ProfileInfoProps) {
 
 
     const getInitials = (fullName: string | undefined) => {
-        // @ts-ignore
-        const names = fullName.trim().split(' ');
+        const safeName = fullName ?? "";
+        const names = safeName.trim().split(' ');
         if (names.length >= 2) {
             return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
         }
-        // @ts-ignore
-        return fullName.substring(0, 2).toUpperCase();
+        return safeName.substring(0, 2).toUpperCase();
     };
 
     return (
@@ -41,6 +43,20 @@ export default function ProfileInfo({fullName, role} : ProfileInfoProps) {
 
                     <Text className={"text-2xl font-bold mt-3"}>{fullName}</Text>
                     <Text className={"text-lg text-primary-500"}>{role}</Text>
+
+                    {companyName && (
+                        <View className={"items-center mt-2"}>
+                            <View className={"flex-row items-center gap-1.5"}>
+                                <Building2 size={14} color={"#78716c"}/>
+                                <Text className={"text-sm text-secondary-500"}>{companyName}</Text>
+                            </View>
+                            {isOwnCompany === false && (
+                                <Text className={"text-xs text-secondary-400 mt-0.5"}>
+                                    Ai fost adăugat în această companie
+                                </Text>
+                            )}
+                        </View>
+                    )}
 
                 </View>
             </View>

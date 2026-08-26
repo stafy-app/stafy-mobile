@@ -5,7 +5,7 @@ import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import HeaderThemed from "@/src/components/ui/HeaderThemed";
 import ProfileInfo from "@/src/components/profile/ProfileInfo";
-import {useFocusEffect} from "expo-router";
+import {useFocusEffect, useRouter} from "expo-router";
 import {useCallback, useState} from "react";
 import {api} from "@/src/services/api";
 import useUser from "@/src/hooks/useUser";
@@ -30,8 +30,7 @@ export default function ProfileScreen() {
     const [selectedRate, setSelectedRate] = useState<HourlyRate | null>(null);
 
     const {user, logout} = useUser();
-
-    if (!user) return null;
+    const router = useRouter();
 
     useFocusEffect(
         useCallback(() => {
@@ -123,6 +122,9 @@ export default function ProfileScreen() {
         setIsDeletePopupVisible(false);
     }
 
+    if (!user) return null;
+
+    const canEditRates = user.is_own_company !== false;
 
     return (
         <SafeScreenWrapper>
@@ -133,7 +135,12 @@ export default function ProfileScreen() {
 
                 {/* Profile Section */}
                 <View className={"mt-10"}>
-                    <ProfileInfo fullName={user.last_name + " " + user.first_name} role={user.role}/>
+                    <ProfileInfo
+                        fullName={user.last_name + " " + user.first_name}
+                        role={user.role}
+                        companyName={user.company_name}
+                        isOwnCompany={user.is_own_company}
+                    />
                 </View>
 
                 {/* Tips & Tricks Section */}
@@ -160,10 +167,18 @@ export default function ProfileScreen() {
                 <View className={"mt-10 mx-5"}>
                     <View className="flex-row justify-between items-center mb-5">
                         <Text className={"font-semibold text-lg"}>Tarife Orare</Text>
-                        <TouchableOpacity onPress={() => setIsAddPopupVisible(true)} className="p-1">
-                            <Plus size={24} color="#64748b" />
-                        </TouchableOpacity>
+                        {canEditRates && (
+                            <TouchableOpacity onPress={() => setIsAddPopupVisible(true)} className="p-1">
+                                <Plus size={24} color="#64748b" />
+                            </TouchableOpacity>
+                        )}
                     </View>
+
+                    {!canEditRates && (
+                        <Text className={"text-xs text-secondary-400 mb-3"}>
+                            Tariful este stabilit de managerul companiei.
+                        </Text>
+                    )}
 
                     {rates.map((rate) => (
                         <HourlyRateCard
@@ -172,8 +187,8 @@ export default function ProfileScreen() {
                             subtitle={""}
                             price={rate.hourly_rate_gross.toString() + " RON"}
                             unitLabel={"per Oră"}
-                            onPress={() => handleRatePress(rate)}
-                            onLongPress={() => handleRateLongPress(rate)}
+                            onPress={canEditRates ? () => handleRatePress(rate) : undefined}
+                            onLongPress={canEditRates ? () => handleRateLongPress(rate) : undefined}
                         />
                     ))}
                 </View>
@@ -182,6 +197,13 @@ export default function ProfileScreen() {
                 <View className={"my-10 mx-5"}>
                     <ButtonThemed title={"Deconectare"} onPress={logout} height={"h-12"}/>
                 </View>
+
+                {/* Dev-only Section */}
+                {__DEV__ && (
+                    <View className={"mb-10 mx-5"}>
+                        <ButtonThemed title={"Dev: Tests"} variant={""} onPress={() => router.push("/tests")} height={"h-12"}/>
+                    </View>
+                )}
 
                 {/* Footer Section */}
                 <FooterThemed />

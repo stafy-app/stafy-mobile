@@ -62,20 +62,24 @@ No automated test suite exists. Manual smoke-test the changed screen on both nat
 | Module | Status | Description |
 |---|---|---|
 | `app/(auth)/login.tsx` | Live | Email + password login via Firebase (`signInWithEmailAndPassword`), then `POST /api/v1/auth/login` with the ID token |
-| `app/(auth)/register.tsx` | Live | Registration via Firebase (`createUserWithEmailAndPassword`), then `POST /api/v1/auth/register` with the ID token; role selector: `employee` / `manager` |
+| `app/(auth)/register.tsx` | Live | 4-step onboarding wizard (welcome → role → identity → account) instead of a single form; local state accumulates across steps, no network call until the last one. Picking `manager` on the role step redirects straight to `/manager-mobile-blocked`. Last step runs Firebase (`createUserWithEmailAndPassword`) then `POST /api/v1/auth/register` with the ID token. See `docs/modules/auth.md` Flow 1 |
+| `app/(auth)/forgot-password.tsx` | Live | Email-only password reset via Firebase (`sendPasswordResetEmail`), no backend call — linked from `login.tsx`. See `docs/modules/auth.md` Flow 5 |
+| `app/(auth)/complete-registration.tsx` | Live | Orphan-registration recovery: name, surname, then role, then `POST /api/v1/auth/register` reusing the already-signed-in Firebase session (no email/password re-entry). Reached only from `login.tsx` catching `OrphanRegistrationError`. See `docs/modules/auth.md` Flow 6 |
+| `app/manager-mobile-blocked.tsx` | Live | Role-gate landing screen (not under `(auth)/`) — reached from the register wizard's role step, `complete-registration.tsx`, and cold-start hydration alike, whenever `isManagerMobileBlocked(role)` is true. Static text pointing managers at the web app to register instead. "Deconectare" explicitly `router.replace`s to `/login` after `logout()` rather than relying on its side effect — see `docs/modules/auth.md` Special Aspects |
 | `src/services/firebase.ts` | Live | Firebase app + `auth` singleton init; native uses `getReactNativePersistence(AsyncStorage)`, web uses default `getAuth` |
-| `app/(tabs)/attendance.tsx` | Live — has debt | Time-entry creation; **not** offline-aware — uses bare `api.post`, not `OfflineManager.apiPost` |
-| `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart; **not** offline-aware — uses bare `api.get`, not `OfflineManager.apiGet` |
+| `app/(tabs)/attendance.tsx` | Live — has debt | Time-entry creation; **not** offline-aware — uses bare `api.post`, not `OfflineManager.apiPost`. `getSubmissionTimeEnd()` normalizes a night shift (ORA STOP picked earlier than ORA START on the same calendar day) by adding 24h before submitting, mirroring `calculateWorkedTime`'s display logic — the backend rejects `time_end <= time_start`. Save failures (validation, duplicate-entry conflict) surface via `Alert.alert`, with known backend error `code`s (`not_found`, `entry_already_exists`) mapped to Romanian via `ERROR_MESSAGES_RO`, not a raw English backend string. `activityId`/`rate` reset on every focus (`useFocusEffect`), and `ActivitySelectorThemed` remounts via a bumped `selectorKey`, so a stale activity selected before navigating away (e.g. before accepting an invitation that changes the user's company) can never be submitted — the user must always re-pick after returning to the tab |
+| `app/(tabs)/dashboard.tsx` | Live — has debt | Monthly hours + gross salary summary + pie chart, plus incoming-invitation cards (accept/reject); **not** offline-aware — uses bare `api.get`/`api.post`, not `OfflineManager` (deliberate for invitations — see `docs/modules/invitations.md` Special Aspects) |
 | `app/(tabs)/history.tsx` | Live — has debt | Time-entry list; both fetch and delete are online-only (bare `api.get` / `api.delete`), not `OfflineManager` |
-| `app/(tabs)/profile.tsx` | Live — has debt | Hourly rates CRUD; edit (`api.patch`) and delete (`api.delete`) are online-only; null-guard missing on `user` |
+| `app/(tabs)/profile.tsx` | Live — has debt | Hourly rates CRUD, gated read-only when `user.is_own_company === false` (see `docs/modules/auth.md`); edit (`api.patch`) and delete (`api.delete`) are online-only; null-guard missing on `user`. Also has a `__DEV__`-gated "Dev: Tests" button linking to `/tests` |
+| `app/tests.tsx` | Live, dev-only | Not a tab — a top-level route reached via Profile's `__DEV__`-gated button. Triggers a Sentry test error (`Sentry.captureException`) to verify capture. Redirects to `/` if reached with `__DEV__` false (e.g. a stray deep link in production) |
 | `src/services/OfflineManager.ts` | Live — incomplete | GET (cache) + POST (queue + sync) implemented; PATCH, DELETE, PUT not yet implemented (TODO) |
-| `src/context/UserContext.tsx` | Live | Auth state, login/register/logout, profile fetch; `user` is null before hydration |
+| `src/context/UserContext.tsx` | Live | Auth state, login/register/completeRegistration/logout, profile fetch, `refreshProfile()` (re-fetches `/api/v1/profile` without toggling `isLoading`, so `UserOnly` doesn't unmount the calling screen — first caller: dashboard's invitation-accept flow); `user` is null before hydration. Exports `OrphanRegistrationError`, thrown by `login()` on a 404 (Firebase account exists, backend row doesn't) — `login.tsx` catches it and routes to `/complete-registration` instead of showing an Alert |
 | `src/hooks/useUser.tsx` | Live | Thin wrapper over `UserContext`; throws if used outside `UserProvider` |
 | `src/components/*Themed.tsx` | Live | Shared design-system components (Button, TextInput, Dropdown, Popup, Header, Footer…) |
 | `src/components/attendance/` | Live | CalendarThemed, TimeSelectorThemed, ActivitySelectorThemed, CalculatorThemed |
-| `src/components/dashboard/` | Live | InfoCard, PieChartData |
+| `src/components/dashboard/` | Live | InfoCard, PieChartData, IncomingInvitationCard (accept/reject actions, see `docs/modules/invitations.md`) |
 | `src/components/history/` | Live | HistoryTable |
-| `src/components/profile/` | Live | ProfileInfo, HourlyRateCard, PopupEdit, PopupAddRate, TipCard |
+| `src/components/profile/` | Live | ProfileInfo (name/role, plus company name + "joined another manager's company" caption when `is_own_company` is `false` — see `docs/modules/auth.md` Special Aspects), HourlyRateCard, PopupEdit, PopupAddRate, TipCard |
 | `src/utils/` | Live | `networkHelper.ts`, `pieChartHelper.ts`, `routeHelper.ts`, `calculateWorkedTime.ts` |
 
 ## CLI Quick Reference
@@ -112,6 +116,7 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 - **Token expiry**: No longer tracked manually. `onAuthStateChanged` (Firebase SDK) drives both the cold-start redirect in `_layout.tsx` and `UserContext`'s hydration; the SDK silently refreshes the ID token before expiry.
 - **Routing**: Expo Router file-based. Auth screens live in `app/(auth)/`; tab screens in `app/(tabs)/`. Cold start → `app/index.tsx` → immediately replaced by `_layout.tsx`'s `checkAuth` effect.
 - **Icons**: `lucide-react-native` exclusively. Do not mix icon libraries.
+- **Error tracking**: `Sentry.init()` at the top of `app/_layout.tsx`, gated on `EXPO_PUBLIC_SENTRY_DSN` being set (unset locally → no-op, no dev noise). `Sentry.wrap(RootLayout)` wraps the exported component for app-start/navigation instrumentation — `init` must run before this, at module top level, not buried lower in the file. `environment` reads `EXPO_PUBLIC_SENTRY_ENVIRONMENT` (set per `eas.json` build profile — `staging` for `preview`, `production` for `production`), falling back to `__DEV__ ? 'development' : 'production'` for local runs. `sendDefaultPii` is explicitly `false` — this app handles salary/hourly-rate data, don't flip it on without discussing. `enableLogs` is `true` (forwards `console.*` calls to Sentry as structured logs) — be mindful before adding a new `console.log` that dumps a full object (e.g. a time entry with `rate_applied`), since it now ships to Sentry too. `metro.config.js` uses `getSentryExpoConfig` (not `getDefaultConfig`) so bundles carry the metadata needed for EAS Build's automatic source-map upload; `app.json`'s `@sentry/react-native/expo` plugin drives that upload, authenticated via `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` set as EAS environment variables (`eas env:create`), never committed.
 
 ## Storage Keys
 
@@ -127,16 +132,20 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 |---|---|---|---|
 | `UserContext` login | POST | `/api/v1/auth/login` | No — auth only |
 | `UserContext` register | POST | `/api/v1/auth/register` | No — auth only |
+| `UserContext` completeRegistration | POST | `/api/v1/auth/register` | No — auth only |
 | `UserContext` getProfile | GET | `/api/v1/profile` | No — bootstrap only |
 | `ActivitySelectorThemed` | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
-| `dashboard.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
-| `history.tsx` | GET | `/api/v1/dashboard/employee` | No ⚠ debt |
+| `dashboard.tsx` | GET | `/api/v1/dashboard/me` | No ⚠ debt |
+| `history.tsx` | GET | `/api/v1/dashboard/me` | No ⚠ debt |
 | `history.tsx` delete | DELETE | `/api/v1/time-entries/{id}` | No ⚠ debt |
 | `attendance.tsx` submit | POST | `/api/v1/time-entries/` | No ⚠ debt |
 | `profile.tsx` rates | GET | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
 | `profile.tsx` edit rate | PATCH | `/api/v1/users/me/settings/hourly-rates` | No ⚠ debt |
 | `profile.tsx` add activity | POST | `/api/v1/users/me/settings/activities` | No ⚠ debt |
 | `profile.tsx` delete activity | DELETE | `/api/v1/users/me/settings/activities/{id}` | No ⚠ debt |
+| `dashboard.tsx` invitations | GET | `/api/v1/invitations/me` | No — deliberate, see `docs/modules/invitations.md` |
+| `dashboard.tsx` accept invitation | POST | `/api/v1/invitations/{id}/accept` | No — deliberate |
+| `dashboard.tsx` reject invitation | POST | `/api/v1/invitations/{id}/reject` | No — deliberate |
 
 `time_entries` lives under top-level `/api/v1/time-entries`. The profile endpoint (`/api/v1/profile`) is flat, with no `{current_user: ...}` envelope. List responses use a `{data: [...]}` envelope. `hourly_rate_gross`, `rate_hour`, and `total_gross_salary` are JSON strings (`Decimal`, not `number`) — see `src/types/api.ts`.
 
@@ -144,7 +153,9 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 ❌ **`OfflineManager.apiPost` is POST-only.** Items queued offline are always replayed with `api.post(item.endpoint, item.data)` in `apiSync`. Passing a PATCH or DELETE through the queue will fail silently or corrupt data.
 
-❌ **`Platform.OS === 'web'` swaps the base URL.** Native points to `https://stafy-backend.onrender.com/`; web points to `http://127.0.0.1:8000/`. There is no `.env` file — the switch is hardcoded in `src/services/api.ts:7`. If you need a different backend URL, change it there.
+❌ **The web build is a temporary stopgap, not a permanent platform.** In production this app is meant to be native-only (iOS/Android install); the web build exists only until the native apps are published to both stores (mainly blocked on the Apple Developer Program cost, not yet paid — see the phased rollout in `../LAUNCH-READINESS.md`). Its domain is `employee.stafy.ro` (Vercel) — don't add a second domain/subdomain for it. Don't design a feature that assumes the web build is a permanent, separate product — it's transitional and employee-only in practice, same as native.
+
+❌ **Both platforms currently point at the local backend, Render is commented out.** `src/services/api.ts` sets `API_URL` to `process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'` for every platform — the `Platform.OS === 'web'` branch that pointed native at `https://stafy-s5oi.onrender.com/` is commented out (kept for when Render is used again), not deleted. `EXPO_PUBLIC_API_URL` comes from `.env.local` (gitignored). **On a physical device, `127.0.0.1` resolves to the phone itself, not the dev machine** — set `EXPO_PUBLIC_API_URL` in `.env.local` to the dev machine's LAN IP (the same IP Metro prints on `just dev`, e.g. `http://192.168.0.172:8000`) to reach a local backend from a real phone; an emulator/simulator or the web build can keep `127.0.0.1`.
 
 ❌ **`user` is `null` before `UserContext` finishes hydration.** `isLoading` is `true` during hydration. Any screen that reads `user.*` must guard against `null`. The existing `// @ts-ignore` at `profile.tsx:146` is debt — do not copy it for new fields.
 
@@ -154,11 +165,13 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 
 ❌ **No TypeScript `strict` null-checking on context.** `useUser()` throws if called outside `UserProvider`, but components inside the provider still see `user: User | null`. TypeScript will not catch `user.first_name` accesses — you must add the null guard manually.
 
-❌ **`stafy_token` no longer exists.** Auth moved to the Firebase SDK (`src/services/firebase.ts`) — the ID token is fetched per-request via `auth.currentUser.getIdToken()` in `api.ts`'s interceptor, never cached in storage. Old code paths reading/writing `stafy_token` are commented out (marked deprecated) in `UserContext.tsx`, `api.ts`, `app/_layout.tsx` — don't resurrect them. See `docs/modules/auth.md`.
+❌ **`stafy_token` no longer exists.** Auth moved to the Firebase SDK (`src/services/firebase.ts`) — the ID token is fetched per-request via `auth.currentUser.getIdToken()` in `api.ts`'s interceptor, never cached in storage. See `docs/modules/auth.md`.
 
 ❌ **`getReactNativePersistence` is missing from `firebase/auth`'s public TypeScript types** (known firebase-js-sdk gap — the runtime export exists, the aggregated `.d.ts` doesn't declare it). `src/services/firebase.ts` imports it behind a documented `@ts-expect-error`; do not "fix" this by removing the suppression.
 
-❌ **Registration is two sequential calls** (`createUserWithEmailAndPassword` then `POST /api/v1/auth/register`). If the backend call fails after the Firebase account was created, the Firebase user is deliberately left in place (no rollback) — see `docs/modules/auth.md` "Special Aspects → Orphan registration" for the known case and its limits (no auto-recovery UI yet; login will surface a distinct "registration not finished" error instead of a wrong-password error).
+❌ **Registration is two sequential calls** (`createUserWithEmailAndPassword` then `POST /api/v1/auth/register`). If the backend call fails after the Firebase account was created, the Firebase user is deliberately left in place (no rollback) — see `docs/modules/auth.md` "Special Aspects → Orphan registration". Recovery is `app/(auth)/complete-registration.tsx`: `login()` throws `OrphanRegistrationError` on the resulting 404, `login.tsx` catches it and routes there instead of showing an Alert. Cold-start hydration does not route there directly — a relaunch while orphaned still needs one login attempt first.
+
+❌ **`attendance.tsx`'s ORA START / ORA STOP pickers always share the same calendar day** (both are seeded from the single date `CalendarThemed` selects; only hour:minute changes independently). A night shift where ORA STOP's clock time is earlier than ORA START's is therefore chronologically *before* it as raw `Date` values — `calculateWorkedTime` already compensates for *display* by adding 24h when the diff is negative. `handleSaveToDb` must apply the same 24h correction to the `time_end` it actually submits (`getSubmissionTimeEnd`) — the backend rejects `time_end <= time_start` (`stafy-backend/stafy/time_entries/schemas.py:TimeEntryIn`), so skipping this breaks every night-shift submission with no visible cause.
 
 ❌ **Every endpoint path must start with `/api/v1/`, including `/auth/*`.** All routers, including `auth_router`, are mounted with `app.include_router(..., prefix="/api/v1")` in `stafy-backend/app/main.py`. Before adding a new endpoint call, verify the full path against `stafy-backend/app/main.py`'s `include_router` calls.
 
@@ -181,3 +194,4 @@ Path alias `@/` resolves to repo root — configured in `tsconfig.json` and `met
 | Path alias `@/` resolution | `tsconfig.json` + `metro.config.js` |
 | EAS build config, project ID | `eas.json`, `app.json` |
 | Backend contract (routes, shapes, auth) | [`../stafy-backend/CLAUDE.md`](../stafy-backend/CLAUDE.md) |
+| Manager-facing web client (this app blocks the `manager` role) | [`../stafy-web-app/CLAUDE.md`](../stafy-web-app/CLAUDE.md) |

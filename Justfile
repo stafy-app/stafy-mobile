@@ -40,6 +40,10 @@ add-dev pkg:
 remove pkg:
     npm uninstall {{ pkg }}
 
+# Local static web export for Vercel (dist/) — no EAS, no cloud
+build-web:
+    npx expo export -p web
+
 # EAS cloud build for Android
 build-android:
     eas build --platform android
