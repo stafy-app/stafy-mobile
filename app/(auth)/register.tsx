@@ -1,6 +1,6 @@
 // app/register.tsx
 
-import {View, Text, Alert, ScrollView, TouchableOpacity, Animated, Easing} from "react-native";
+import {View, Text, ScrollView, TouchableOpacity, Animated, Easing} from "react-native";
 import {Link, router} from "expo-router";
 
 import {Lock, UserRound, Mail, Briefcase, ChevronLeft} from "lucide-react-native";
@@ -13,7 +13,11 @@ import SafeScreenWrapper from "@/src/components/ui/SafeScreenWrapper";
 
 import {useEffect, useRef, useState} from "react";
 import useUser from "@/src/hooks/useUser";
+import {OrphanRegistrationError} from "@/src/context/UserContext";
 import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
+
+const NAME_MIN = 2;
+const NAME_MAX = 30;
 
 const STEPS = ["role", "identity", "account"] as const;
 type Step = typeof STEPS[number];
@@ -23,14 +27,20 @@ export default function RegisterScreen() {
     const [stepIndex, setStepIndex] = useState(-1); // -1 = welcome screen, 0..2 = STEPS
 
     const [role, setRole] = useState("");
-    const [name, setName] = useState("");
-    const [surname, setSurname] = useState("");
+    // Field labelled "Nume" (Romanian family name) → backend last_name;
+    // "Prenume" (given name) → backend first_name. Matches stafy-web-app's
+    // RegisterPage mapping.
+    const [lastName, setLastName] = useState("");
+    const [firstName, setFirstName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [stepError, setStepError] = useState("");
 
     const [registerOk, setRegisterOk] = useState(false);
+    // Firebase account exists (fully or as an orphan) — send the user to login
+    // to recover, instead of a dead end. See handleRegister / UserContext.register.
+    const [authRedirect, setAuthRedirect] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const {register} = useUser();
@@ -92,8 +102,21 @@ export default function RegisterScreen() {
     };
 
     const handleContinueIdentity = () => {
-        if (!name.trim() || !surname.trim()) {
+        const ln = lastName.trim();
+        const fn = firstName.trim();
+        if (!ln || !fn) {
             setStepError("Completează numele și prenumele");
+            return;
+        }
+        // Backend UserRegisterIn enforces min 2 / max 30 on both — mirror it here
+        // so a too-short name fails on this step, not after the Firebase account
+        // is already created.
+        if (ln.length < NAME_MIN || fn.length < NAME_MIN) {
+            setStepError(`Numele și prenumele trebuie să aibă minim ${NAME_MIN} caractere`);
+            return;
+        }
+        if (ln.length > NAME_MAX || fn.length > NAME_MAX) {
+            setStepError(`Numele și prenumele pot avea maxim ${NAME_MAX} de caractere`);
             return;
         }
         setStepError("");
@@ -120,9 +143,9 @@ export default function RegisterScreen() {
             setIsLoading(true);
 
             const registerData = {
-                name: name,
-                surname: surname,
-                email: email,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.trim(),
                 role: role,
                 password: password,
             }
@@ -132,7 +155,14 @@ export default function RegisterScreen() {
             }
 
         } catch (e: any) {
-            Alert.alert("Eroare", e?.message ?? "Nu am putut crea contul");
+            // Firebase account already exists / was orphaned — route to login
+            // (RN Web's Alert.alert doesn't render reliably in the FB in-app
+            // browser, and a plain error string here left users stuck).
+            if (e instanceof OrphanRegistrationError) {
+                setAuthRedirect(true);
+                return;
+            }
+            setStepError(e?.message ?? "Nu am putut crea contul");
         } finally {
             setIsLoading(false);
         }
@@ -231,14 +261,14 @@ export default function RegisterScreen() {
                         <TextInputThemed placeholder={"Nume"} className={"mb-4"}
                                          keyboardType={"default"}
                                          Icon={UserRound}
-                                         value={name}
-                                         onChangeText={setName}/>
+                                         value={lastName}
+                                         onChangeText={setLastName}/>
 
                         <TextInputThemed placeholder={"Prenume"} className={"mb-4"}
                                          keyboardType={"default"}
                                          Icon={UserRound}
-                                         value={surname}
-                                         onChangeText={setSurname}/>
+                                         value={firstName}
+                                         onChangeText={setFirstName}/>
 
                         {!!stepError && <Text className={"text-red-500 text-sm mb-2"}>{stepError}</Text>}
 
@@ -280,6 +310,13 @@ export default function RegisterScreen() {
                              message={"Mergi la pagina de autentificare"}
                              buttonText={"Autentificare"} onClose={() => {
                     setRegisterOk(false);
+                    router.replace("/login");
+                }}/>
+
+                <PopupThemed visible={authRedirect} title={"Aproape gata"}
+                             message={"Contul tău a fost creat, dar înregistrarea nu s-a finalizat. Autentifică-te cu emailul și parola alese ca să o reiei."}
+                             buttonText={"Autentificare"} onClose={() => {
+                    setAuthRedirect(false);
                     router.replace("/login");
                 }}/>
 

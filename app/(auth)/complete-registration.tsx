@@ -1,6 +1,6 @@
 // app/complete-registration.tsx
 
-import {View, Text, Alert, ScrollView, TouchableOpacity} from "react-native";
+import {View, Text, ScrollView, TouchableOpacity} from "react-native";
 import {router} from "expo-router";
 
 import {UserRound, Briefcase} from "lucide-react-native";
@@ -15,11 +15,16 @@ import useUser from "@/src/hooks/useUser";
 import {auth} from "@/src/services/firebase";
 import isManagerMobileBlocked from "@/src/utils/isManagerMobileBlocked";
 
+const NAME_MIN = 2;
+const NAME_MAX = 30;
+
 export default function CompleteRegistrationScreen() {
 
     const [role, setRole] = useState("");
-    const [name, setName] = useState("");
-    const [surname, setSurname] = useState("");
+    // "Nume" (family name) → backend last_name; "Prenume" (given name) →
+    // first_name. Same mapping as register.tsx and stafy-web-app.
+    const [lastName, setLastName] = useState("");
+    const [firstName, setFirstName] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -39,8 +44,18 @@ export default function CompleteRegistrationScreen() {
             setError("Alege rolul tău");
             return;
         }
-        if (!name.trim() || !surname.trim()) {
+        const ln = lastName.trim();
+        const fn = firstName.trim();
+        if (!ln || !fn) {
             setError("Completează numele și prenumele");
+            return;
+        }
+        if (ln.length < NAME_MIN || fn.length < NAME_MIN) {
+            setError(`Numele și prenumele trebuie să aibă minim ${NAME_MIN} caractere`);
+            return;
+        }
+        if (ln.length > NAME_MAX || fn.length > NAME_MAX) {
+            setError(`Numele și prenumele pot avea maxim ${NAME_MAX} de caractere`);
             return;
         }
         setError("");
@@ -48,7 +63,7 @@ export default function CompleteRegistrationScreen() {
         try {
             setIsLoading(true);
 
-            if (await completeRegistration({name, surname, role})) {
+            if (await completeRegistration({firstName: fn, lastName: ln, role})) {
                 if (isManagerMobileBlocked(role)) {
                     router.replace("/manager-mobile-blocked");
                 } else {
@@ -57,7 +72,7 @@ export default function CompleteRegistrationScreen() {
             }
 
         } catch (e: any) {
-            Alert.alert("Eroare", e?.message ?? "Nu am putut finaliza înregistrarea");
+            setError(e?.message ?? "Nu am putut finaliza înregistrarea");
         } finally {
             setIsLoading(false);
         }
@@ -94,14 +109,14 @@ export default function CompleteRegistrationScreen() {
                     <TextInputThemed placeholder={"Nume"} className={"mb-2"}
                                      keyboardType={"default"}
                                      Icon={UserRound}
-                                     value={name}
-                                     onChangeText={setName}/>
+                                     value={lastName}
+                                     onChangeText={setLastName}/>
 
                     <TextInputThemed placeholder={"Prenume"}
                                      keyboardType={"default"}
                                      Icon={UserRound}
-                                     value={surname}
-                                     onChangeText={setSurname}/>
+                                     value={firstName}
+                                     onChangeText={setFirstName}/>
 
                     <View className={"mt-8"}>
                         <Text className={"text-secondary-900 font-semibold text-base"}>Rolul tău</Text>

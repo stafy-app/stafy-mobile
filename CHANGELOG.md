@@ -12,15 +12,12 @@ managers use the web dashboard.
 
 ### Added
 
-- **Authentication** — Firebase email/password login and registration.
-  Registration is a 4-step wizard (welcome → role → personal details → account).
-  Password reset by email. Sessions persist across restarts; the ID token
-  refreshes silently.
+- **Authentication** — email/password sign-in, a multi-step registration wizard,
+  and password reset. Sessions persist across restarts.
 - **Manager block** — the `manager` role cannot use the mobile app; a dedicated
   screen points managers to the web dashboard.
-- **Orphan-account recovery** — if a Firebase account exists without a matching
-  backend record, `complete-registration` re-provisions it using the existing
-  Firebase session, with no email/password re-entry.
+- **Account recovery** — a recovery flow for accounts left half-registered by an
+  interrupted sign-up, with no email/password re-entry.
 - **Attendance** — create a time entry with date, time range, and activity type;
   duration is computed automatically. Night shifts (end time earlier than start
   on the same day) are corrected by +24h before submission. Known backend
@@ -43,8 +40,8 @@ managers use the web dashboard.
   writes (POST) with sync on reconnect (debounced 2s after connectivity
   returns).
 - **Error tracking** — Sentry, active only when a DSN is configured (no dev
-  noise). `send_default_pii` is off — the app handles salary data. Dev-only test
-  screen for verifying Sentry capture.
+  noise); PII forwarding is off because the app handles salary data. Dev-only
+  test screen for verifying Sentry capture.
 - **Platforms** — iOS / Android / Web from one codebase. The web build is
   transitional until the native apps ship to the stores.
 - **Localization** — Romanian throughout.
@@ -57,5 +54,5 @@ managers use the web dashboard.
 - Native apps not yet published — web build in the interim.
 - Requires the Stafy backend; `EXPO_PUBLIC_API_URL` must be configured (LAN IP on
   a physical device, `127.0.0.1` on an emulator or the web build).
-- No automatic recovery if a Firebase account is created but backend
-  provisioning fails — resolved via `complete-registration` on the next login.
+- An interrupted sign-up needs one manual login attempt before the recovery flow
+  kicks in.
