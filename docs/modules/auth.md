@@ -99,12 +99,12 @@ copied from the decoded Firebase token.
 1. Mobile → Register screen: a 4-step wizard (welcome → role → identity → account), not a single form. Data accumulates in local component state across steps; nothing is sent over the network until the last step.
    - **Welcome**: branding only, no input.
    - **Role**: `employee` / `manager`. Selecting `manager` redirects straight to `/manager-mobile-blocked` — the wizard never asks a manager for identity/account details on mobile.
-   - **Identity**: name, surname.
+   - **Identity**: "Nume" (family name) and "Prenume" (given name). The step enforces min 2 / max 30 chars on both — mirrors the backend's `UserRegisterIn`, so a too-short name fails here, before any Firebase account is created.
    - **Account**: email, password, confirm-password (client-side match check; no confirm-password field existed before this wizard).
 2. On the last step: `createUserWithEmailAndPassword(auth, email, password)` — Firebase creates the account, returns a `User` + ID token
-3. `POST /api/v1/auth/register` with `Authorization: Bearer <idToken>`, body `{first_name, last_name, role}` — email/password never leave the Firebase SDK call
+3. `POST /api/v1/auth/register` with `Authorization: Bearer <idToken>`, body `{first_name, last_name, role}` — email/password never leave the Firebase SDK call. **"Prenume" → `first_name`, "Nume" → `last_name`** (same mapping as `stafy-web-app`'s `RegisterPage`); the wizard's `firstName`/`lastName` state is named for the backend field, not the on-screen label.
 4. Backend decodes the token, creates the `users` row + a personal `Company`, returns `UserOut`
-5. On backend failure after step 2 succeeded: Firebase account is left in place (no rollback — see Special Aspects); the wizard shows a distinct error, not the generic one; the account is now orphaned and recovers via Flow 6, not by retrying Flow 1 (`createUserWithEmailAndPassword` now fails `auth/email-already-in-use`)
+5. On backend failure after step 2 succeeded — or on `auth/email-already-in-use` at step 2 (a prior orphaned attempt) — `register()` raises `OrphanRegistrationError`; the wizard shows a popup ("Există deja un cont") whose button routes to `/login`. It does **not** show an inline error and let the user retry (retrying only re-hits `auth/email-already-in-use`), and it does **not** use `Alert.alert` (unreliable in the web build's in-app browsers). Recovery continues via Flow 2 → Flow 6.
 
 ### Flow 2: Login
 
@@ -140,7 +140,7 @@ copied from the decoded Firebase token.
 ### Flow 6: Orphan-registration recovery
 
 1. Reached only via Flow 2 step 6 (`OrphanRegistrationError`) — the user is already Firebase-authenticated at this point, `auth.currentUser` is guaranteed set
-2. Mobile → `app/(auth)/complete-registration.tsx`: name, surname, then role (same fields Flow 1's wizard collects, minus email/password — those already exist in Firebase)
+2. Mobile → `app/(auth)/complete-registration.tsx`: "Nume", "Prenume" (same min 2 / max 30 rule and same field→backend mapping as Flow 1's Identity step), then role — minus email/password, those already exist in Firebase. Backend failure here surfaces inline (`setError`), not via `Alert.alert`.
 3. `completeRegistration()` reads `auth.currentUser.getIdToken()` directly — no `signInWithEmailAndPassword` call, the session already exists
 4. `POST /api/v1/auth/register` with that token, same body shape as Flow 1 step 3 — finishes provisioning the `users` row that was missing
 5. On success: `getProfile()`, cache, `setUser()`, then route to `/manager-mobile-blocked` or `/attendance` same as Flow 2's post-login redirect
@@ -257,6 +257,12 @@ recovery is Flow 6 (`app/(auth)/complete-registration.tsx`), reached automatical
 throws `OrphanRegistrationError`. Cold-start hydration (Flow 3) does **not** route here directly on
 a 404 — it still falls back to `/login`, so a relaunch while orphaned requires one extra login
 attempt before landing on Flow 6; only `login()` classifies the 404 as recoverable.
+
+`register()` in `UserContext.tsx` raises the same `OrphanRegistrationError` in two spots so the
+wizard has one thing to catch: (a) the backend `POST` failing after the Firebase account exists,
+(b) `createUserWithEmailAndPassword` throwing `auth/email-already-in-use` (the retry-after-orphan
+case). `register.tsx` catches it and shows a popup that routes to `/login` — from there `login()`
+re-raises it on the 404 and `login.tsx` routes to `/complete-registration`.
 
 ### `/api/v1` prefix — no exceptions
 

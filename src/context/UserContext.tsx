@@ -41,16 +41,16 @@ function mapAuthError(error: any): string {
 
 
 interface RegisterData {
-    name: string;
-    surname: string;
+    firstName: string;
+    lastName: string;
     email: string;
     role: string;
     password: string;
 }
 
 interface CompleteRegistrationData {
-    name: string;
-    surname: string;
+    firstName: string;
+    lastName: string;
     role: string;
 }
 
@@ -132,65 +132,55 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
         }
     }
 
-    // Deprecated — backend no longer accepts email/password on /auth/register,
-    // it only accepts first_name/last_name/role plus a Firebase ID token in the
-    // Authorization header (email/uid come from the verified token). Kept here
-    // for reference until the migration settles. See replacement below.
-    // async function register(registerData: RegisterData) {
-    //
-    //     try {
-    //         setIsLoading(true);
-    //
-    //         const response = await api.post('/auth/register', {
-    //             'first_name': registerData.name,
-    //             'last_name': registerData.surname,
-    //             'email': registerData.email,
-    //             'role': registerData.role,
-    //             'password': registerData.password,
-    //         });
-    //
-    //         console.log("Response from backend: ", response.data);
-    //         setIsLoading(false);
-    //
-    //         return true
-    //     } catch (error: any) {
-    //         console.log(error.response.data.message)
-    //         throw new Error(error.response.data.message);
-    //     }
-    //
-    // }
-
     async function register(registerData: RegisterData) {
 
         try {
             setIsLoading(true);
             isAuthenticating.current = true;
 
-            const credential = await createUserWithEmailAndPassword(auth, registerData.email, registerData.password);
+            let credential;
+            try {
+                credential = await createUserWithEmailAndPassword(auth, registerData.email, registerData.password);
+            } catch (fbError: any) {
+                // A previous attempt already created this Firebase account (either
+                // it fully registered, or it orphaned before the backend row was
+                // written). Both recover through login(): a real account just logs
+                // in, an orphan makes login() throw OrphanRegistrationError which
+                // login.tsx routes to /complete-registration. Surfacing the same
+                // typed error here lets register.tsx send the user to login
+                // instead of a dead "contact the administrator" message that every
+                // retry would re-hit.
+                if (fbError?.code === 'auth/email-already-in-use') {
+                    throw new OrphanRegistrationError();
+                }
+                throw fbError;
+            }
             const idToken = await credential.user.getIdToken();
 
             try {
                 await api.post('/api/v1/auth/register', {
-                    first_name: registerData.name,
-                    last_name: registerData.surname,
+                    first_name: registerData.firstName,
+                    last_name: registerData.lastName,
                     role: registerData.role,
                 }, {
                     headers: {Authorization: `Bearer ${idToken}`},
                 });
             } catch (backendError: any) {
                 // Firebase account now exists but the backend row doesn't (network
-                // blip, backend down, invalid role). We deliberately do NOT delete
-                // the Firebase user here — deletion can itself fail offline, and a
-                // half-rolled-back state is worse than a recoverable one. The user
-                // recovers via /complete-registration, reached from login()'s
-                // OrphanRegistrationError (see completeRegistration() below and
-                // docs/modules/auth.md, Special Aspects → Orphan registration).
+                // blip, backend down, validation reject). We deliberately do NOT
+                // delete the Firebase user here — deletion can itself fail offline,
+                // and a half-rolled-back state is worse than a recoverable one.
+                // This is the same orphan state login() detects on a 404, so raise
+                // the same typed error: register.tsx routes to /login, and login()
+                // then throws OrphanRegistrationError again to reach
+                // /complete-registration (see docs/modules/auth.md, Special
+                // Aspects → Orphan registration).
                 console.error(
                     "POST /api/v1/auth/register failed:",
                     backendError?.response?.status,
                     backendError?.response?.data ?? backendError?.message
                 );
-                throw new Error("Cont creat, dar înregistrarea pe server a eșuat. Contactează administratorul.");
+                throw new OrphanRegistrationError();
             }
 
             // Best-effort: if registration auto-joined an inviting manager's
@@ -211,6 +201,9 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             return true;
         } catch (error: any) {
+            if (error instanceof OrphanRegistrationError) {
+                throw error;
+            }
             throw new Error(mapAuthError(error));
         } finally {
             setIsLoading(false);
@@ -237,8 +230,8 @@ export default function UserProvider({children}: { children: React.ReactNode }) 
 
             try {
                 await api.post('/api/v1/auth/register', {
-                    first_name: data.name,
-                    last_name: data.surname,
+                    first_name: data.firstName,
+                    last_name: data.lastName,
                     role: data.role,
                 }, {
                     headers: {Authorization: `Bearer ${idToken}`},
