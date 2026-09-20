@@ -11,13 +11,15 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "staging"
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "staging",
+        "EXPO_PUBLIC_API_URL": "https://demo.api.stafy.ro"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.stafy.ro"
       }
     }
   },

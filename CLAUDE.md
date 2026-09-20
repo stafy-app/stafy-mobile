@@ -2,27 +2,15 @@
 
 Employee time-tracking mobile client; React Native + Expo (expo-router); TypeScript; Tailwind via Uniwind; targets iOS, Android, and Web from a single codebase; deployed via EAS Build / Vercel (web).
 
-## Code Navigation — Serena MCP (MANDATORY)
-
-Call `mcp__serena__initial_instructions` at session start before any coding task.
-
-**NEVER** use `Read`, `Grep`, or directory listing to "explore" structure. Use Serena:
-- `find_symbol` / `find_declaration` → jump to definitions
-- `find_referencing_symbols` → find callers/usages
-- `get_symbols_overview` → module structure
-- `search_for_pattern` → pattern search across codebase
-
-Read a file only when you must view the full implementation of a specific, already-located symbol.
-
 ## Output Rules (Zero Fluff)
 
 - No preamble, pleasantries, or closing remarks.
 - Output only the requested change or direct answer.
-- Never rewrite an entire file for a partial change — use Serena editing tools (`replace_symbol_body`, `replace_content`, `insert_after_symbol`) for precise targeted edits.
+- Never rewrite an entire file for a partial change — make targeted, surgical edits.
 
 ## Continuous Memory & Index Updates (Mandatory)
 
-- After every code change or resolved task, silently update the relevant Serena memory and/or auto-memory to reflect new architecture, new symbols, or changed invariants.
+- After every code change or resolved task, silently update the relevant auto-memory to reflect new architecture, new symbols, or changed invariants.
 - Do not wait to be asked. Never skip this step.
 
 ## Engineering Posture

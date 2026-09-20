@@ -22,7 +22,7 @@ ios:
 
 # TypeScript type-check — no emit, reports all type errors
 lint:
-    npx tsc --noEmit
+    npm run lint
 
 # Install dependencies from lockfile
 install:
@@ -55,3 +55,7 @@ build-ios:
 # EAS cloud build for both platforms
 build-all:
     eas build --platform all
+
+# Bump project version (patch|minor|major). No commit/tag — write the CHANGELOG.md entry, then commit both together.
+bump-version bump:
+    npm version {{ bump }} --no-git-tag-version
